@@ -2,6 +2,11 @@
 
 using namespace ModUtils;
 
+void godMode(uintptr_t addr)
+{
+	Replace(addr, { MASKED, MASKED, MASKED, MASKED, MASKED, 0x90 }, { 0x89, 0x81, 0x38, 0x01, 0x00, 0x00 });
+}
+
 void infMagic(bool x, uintptr_t addr)
 {
 	if (addr != 0)
@@ -15,17 +20,15 @@ void infMagic(bool x, uintptr_t addr)
 	}
 }
 
-void noWeight(bool x, uintptr_t weaponAddr, uintptr_t armorAddr)
+void infStamina(bool x, uintptr_t addr)
 {
-	if (weaponAddr != 0 && armorAddr !=0 )
+	if (addr != 0)
 	{
 		if (x) {
-			Replace(weaponAddr, { 0x74, 0x05 }, { 0xeb, 0x05 });
-			Replace(armorAddr, { 0x74, 0x05 }, { 0xeb, 0x05 });
+			Replace(addr, { 0x89,0x87,MASKED,MASKED,MASKED,MASKED }, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
 		}
 		else {
-			Replace(weaponAddr, { 0xeb, 0x05 }, { 0x74, 0x05 });
-			Replace(armorAddr, { 0xeb, 0x05 }, { 0x74, 0x05 });
+			Replace(addr, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }, { 0x89,0x87,0x54,0x01,0x00,0x00 });
 		}
 	}
 }
@@ -104,10 +107,10 @@ void fasterRespawn(bool x, uintptr_t addr)
 	if (addr != 0)
 	{
 		if (x) {
-			Replace(addr, { 0x74, 0x06 }, { 0xeb, 0x06 });
+			Replace(addr, { 0x74 }, { 0xeb });
 		}
 		else {
-			Replace(addr, { 0xeb, 0x06 }, { 0x74, 0x06 });
+			Replace(addr, { 0xeb }, { 0x74 });
 		}
 	}
 }
@@ -121,6 +124,58 @@ void noRunes(bool x, uintptr_t addr)
 		}
 		else {
 			Replace(addr, { 0x90, 0x90, 0x90 }, { 0x89, 0x41, 0x6C });
+		}
+	}
+}
+
+void noStoneRequired(bool x, uintptr_t addr)
+{
+	if (addr != 0)
+	{
+		if (x) {
+			Replace(addr, { 0x74 }, { 0xeb });
+		}
+		else {
+			Replace(addr, { 0xeb }, { 0x74 });
+		}
+	}
+}
+
+void multiJump_func(bool x, uintptr_t addr)
+{
+	if (addr != 0)
+	{
+		if (x) {
+			Replace(addr, { 0x00 }, { 0x92 });
+		}
+		else {
+			Replace(addr, { 0x92 }, { 0x00 });
+		}
+	}
+}
+
+void invisibleToEnemy_func(bool x, uintptr_t addr)
+{
+	if (addr != 0)
+	{
+		if (x) {
+			Replace(addr, { 0x74, MASKED }, { 0x90, 0x90 });
+		}
+		else {
+			Replace(addr, { 0x90, 0x90 }, { 0x74, 0x0c });
+		}
+	}
+}
+
+void showMapBuildings_func(bool x, uintptr_t addr)
+{
+	if (addr != 0)
+	{
+		if (x) {
+			Replace(addr, { 0x75 }, { 0xeb });
+		}
+		else {
+			Replace(addr, { 0xeb }, { 0x75 });
 		}
 	}
 }

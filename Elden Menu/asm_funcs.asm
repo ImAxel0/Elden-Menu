@@ -10,6 +10,11 @@ extern dwRuneAddr:QWORD
 extern levelBack:QWORD
 extern dwLevelAddr:QWORD
 
+extern fovBack:QWORD
+extern fov:xmmword
+
+extern noWeightBack:QWORD
+
 .code
 speedAsm_func proc
 	mov r12, dwSpeed
@@ -50,4 +55,16 @@ levelAsm_func proc
 	pop rax
 	jmp levelBack
 levelAsm_func endp
+
+fovAsm_func proc
+	movaps xmm0, [fov]
+	jmp fovBack
+fovAsm_func endp
+
+noWeightAsm_func proc
+	xorps xmm6, xmm6
+	inc ebx
+	cmp ebx, 05
+	jmp noWeightBack
+noWeightAsm_func endp
 end
