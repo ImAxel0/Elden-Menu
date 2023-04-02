@@ -85,6 +85,9 @@ uintptr_t invisibleToEnemyAddr = SigScan(invisibleToEnemy);
 std::vector<uint16_t> showMapBuildings = { 0x84,0xC0,0x75,MASKED,0x40,0x32,0xF6,0xEB,MASKED,0x41,0x0F,0xB6,0xF6,0x41,0x84,0xDE };
 uintptr_t showMapBuildingsAddr = SigScan(showMapBuildings);
 
+//std::vector<uint16_t> runeMultiplier = { 0xf3,0x0f,0x59,0xc1,0xf3,0x0f,0x2c,0xf8,0x48,0x8b,0x8b };
+//uintptr_t runeMultiplierAddr = SigScan(runeMultiplier);
+
 bool isOpen = true;
 bool showModPage = false;
 bool showAbout = false;
@@ -92,6 +95,7 @@ bool showTips = false;
 bool showStats = true;
 bool showLevel = true;
 bool getRune = true;
+//bool getRuneMultiplier = true;
 bool changedSpeed = true;
 bool fovDetour = true;
 bool key1 = false;
@@ -114,11 +118,15 @@ bool isShowMapBuildings = false;
 const char* playerSpeed[] = { "Default", "x2", "x3", "x5", "x10" };
 static int playerSpeed_current = 0;
 static int playerSpeed_old = playerSpeed_current;
-
+/*
+const char* runeMoltiplicatore[] = { "Default (x1)", "x2", "x3", "x5", "x10" };
+static int runeMultiplier_current = 0;
+static int runeMultiplier_old = runeMultiplier_current;
+*/
 std::string window = "window_home";
 
-const auto lpGetValue1 = (LPVOID)((DWORD_PTR)healthAddr);
-const auto lpGetValue2 = (LPVOID)((DWORD_PTR)noWeightAddr);
+const auto lpGetValueNoWeight = (LPVOID)((DWORD_PTR)noWeightAddr);
+//const auto lpGetValueRuneMultiplier = (LPVOID)((DWORD_PTR)runeMultiplierAddr);
 
 const char credits[] = "Thanks to TechieW for the ModUtils header\nThanks to Hexinton for the cheat table";
 
@@ -194,7 +202,7 @@ LRESULT APIENTRY WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam);
 		return true;
 	}
-	return CallWindowProc(Process::WndProc, hwnd, uMsg, wParam, lParam);
+	return CallWindowProc(Process::WndProc, hwnd, uMsg, wParam, lParam);	
 }
 
 typedef BOOL(WINAPI* hk_SetCursorPos)(int, int);
@@ -249,15 +257,15 @@ void ReadConfig()
 	if (config.read(ini))
 	{
 		gameVer = (ini["Game version"].get("version"));
-		openKey = std::stoi(ini["Open/close key"].get("key value"));
-		visualKey = std::stoi(ini["Unlock visual key"].get("key value"));
+		openKey = std::stoi(ini["Open/close key"].get("key value"), nullptr, 16);
+		visualKey = std::stoi(ini["Unlock visual key"].get("key value"), nullptr, 16);
 		debugMode = std::stoi(ini["Debug mode"].get("value"));
 	}
 	else
 	{
 		ini["Game version"]["version"] = "1.09";
-		ini["Open/close key"]["key value"] = "80";
-		ini["Unlock visual key"]["key value"] = "17";
+		ini["Open/close key"]["key value"] = std::stoi("0x50", nullptr, 16);
+		ini["Unlock visual key"]["key value"] = std::stoi("0x11", nullptr, 16);
 		ini["Debug mode"]["value"] = "0";
 		config.write(ini, true);
 	}
@@ -498,7 +506,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 
 					DetourTransactionBegin();
 					DetourUpdateThread(GetCurrentThread());
-					DetourAttachEx((PVOID*)&lpGetValue2, (PVOID)&noWeightAsm_func, &lpTrampolineData, nullptr, nullptr);
+					DetourAttachEx((PVOID*)&lpGetValueNoWeight, (PVOID)&noWeightAsm_func, &lpTrampolineData, nullptr, nullptr);
 					DetourTransactionCommit();
 					const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
 					noWeightBack = lpDetourInfo->pbRemain;
@@ -507,7 +515,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				{
 					DetourTransactionBegin();
 					DetourUpdateThread(GetCurrentThread());
-					DetourDetach(&(PVOID&)lpGetValue2, noWeightAsm_func);
+					DetourDetach(&(PVOID&)lpGetValueNoWeight, noWeightAsm_func);
 					DetourTransactionCommit();
 				}
 			}
@@ -872,6 +880,54 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				showMapBuildings_func(isShowMapBuildings, (showMapBuildingsAddr + 0x2));
 			}
 			ImGui::SameLine(); HelpMarker("Marks all buildings on the map, can be toggled off");
+			/*
+			ImGui::Combo("Runes multiplier", &runeMultiplier_current, runeMoltiplicatore, 5);
+			ImGui::SameLine(), HelpMarker("Multiplier of gathered runes");
+			if (runeMultiplier_old != runeMultiplier_current)
+			{
+			
+				if (getRuneMultiplier)
+				{
+					Replace(runeMultiplierAddr + 0x5, { 0x0F, 0x2C, 0xF8 }, { 0x90, 0x90, 0x90 });
+					PDETOUR_TRAMPOLINE lpTrampolineData = {};
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttachEx((PVOID*)&lpGetValueRuneMultiplier, (PVOID)&runeMultiplierAsm_func , & lpTrampolineData, nullptr, nullptr);
+					DetourTransactionCommit();
+
+					const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
+					runeMultiplierBack = lpDetourInfo->pbRemain;
+				}
+				getRuneMultiplier = false;
+
+				runeMultiplier_old = runeMultiplier_current;
+				if (runeMultiplier_current == 0)
+				{
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourDetach(&(PVOID&)lpGetValueRuneMultiplier, runeMultiplierAsm_func);
+					DetourTransactionCommit();
+					Replace(runeMultiplierAddr + 0x5, { 0x90, 0x90, 0x90 }, { 0x0F, 0x2C, 0xF8 });
+					getRuneMultiplier = true;
+				}
+				else if (runeMultiplier_current == 1)
+				{
+					dwRuneMul = 2;
+				}
+				else if (runeMultiplier_current == 2)
+				{
+					dwRuneMul = 3;
+				}
+				else if (runeMultiplier_current == 3)
+				{
+					dwRuneMul = 5;
+				}
+				else if (runeMultiplier_current == 4)
+				{
+					dwRuneMul = 10;
+				}
+			} */
 		}
 
 		if (window == "window_themes")
@@ -962,7 +1018,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::Text("Coded by ImAxel0");
 			ImGui::Text(credits);
 			ImGui::SetCursorPos(ImVec2(285, 110));
-			ImGui::Text("v0.2.1");
+			ImGui::Text("v0.2.2");
 			style->Colors[ImGuiCol_Text] = ImColor(49, 154, 236);
 			ImGui::SetCursorPos(ImVec2(5, 110));
 			ImGui::Selectable("Mod page", &showModPage, NULL, ImVec2(80, NULL));
