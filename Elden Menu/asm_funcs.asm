@@ -1,6 +1,3 @@
-extern speedBack:QWORD
-extern dwSpeed:QWORD
-
 extern statsBack:QWORD
 extern dwVigorAddr:QWORD
 
@@ -15,14 +12,17 @@ extern fov:xmmword
 
 extern noWeightBack:QWORD
 
-.code
-speedAsm_func proc
-	mov r12, dwSpeed
-	cvtsi2ss xmm0,r12
-	xor r12, r12
-	jmp speedBack
-speedAsm_func endp
+extern runeMultiplierBack:QWORD
+extern dwRuneMul:real4
 
+extern playerHeightBack:QWORD
+extern playerHeight_m128:xmmword
+extern playerWidthBack:QWORD
+extern playerWidth_m128:xmmword
+extern playerLengthBack:QWORD
+extern playerLength_m128:xmmword
+
+.code
 vigorAsm_func proc
 	push rax
 	xor rax, rax
@@ -67,4 +67,26 @@ noWeightAsm_func proc
 	cmp ebx, 05
 	jmp noWeightBack
 noWeightAsm_func endp
+
+runeMultiplierAsm_func proc
+	movss xmm0, [dwRuneMul]
+	mulss xmm0, xmm1
+	cvttss2si edi, xmm0
+	jmp runeMultiplierBack
+runeMultiplierAsm_func endp
+
+playerHeightAsm_func proc
+	movss xmm1, real4 ptr [playerHeight_m128]
+	jmp playerHeightBack
+playerHeightAsm_func endp
+
+playerWidthAsm_func proc
+	movss xmm2, real4 ptr [playerWidth_m128]
+	jmp playerWidthBack
+playerWidthAsm_func endp
+
+playerLengthAsm_func proc
+	movss xmm0, real4 ptr [playerLength_m128]
+	jmp playerLengthBack
+playerLengthAsm_func endp
 end

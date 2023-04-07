@@ -2,37 +2,6 @@
 
 using namespace ModUtils;
 
-void godMode(uintptr_t addr)
-{
-	Replace(addr, { MASKED, MASKED, MASKED, MASKED, MASKED, 0x90 }, { 0x89, 0x81, 0x38, 0x01, 0x00, 0x00 });
-}
-
-void infMagic(bool x, uintptr_t addr)
-{
-	if (addr != 0)
-	{
-		if (x) {
-			Replace(addr, {0x89, 0x87, 0x48, 0x01, MASKED, MASKED}, {0x90, 0x90, 0x90, 0x90, 0x90, 0x90});
-		}
-		else {
-			Replace(addr, {0x90, 0x90, 0x90, 0x90, 0x90, 0x90}, {0x89, 0x87, 0x48, 0x01, 0x00, 0x00});
-		}
-	}
-}
-
-void infStamina(bool x, uintptr_t addr)
-{
-	if (addr != 0)
-	{
-		if (x) {
-			Replace(addr, { 0x89,0x87,MASKED,MASKED,MASKED,MASKED }, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
-		}
-		else {
-			Replace(addr, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }, { 0x89,0x87,0x54,0x01,0x00,0x00 });
-		}
-	}
-}
-
 void noStatsRequirement(bool x, uintptr_t magic_RvIntAddress, uintptr_t magic_DvIntAddress, uintptr_t weapons_RvStrAddress, uintptr_t weapons_DvStrAddress)
 {
 	if (magic_RvIntAddress != 0 && magic_DvIntAddress != 0 && weapons_RvStrAddress != 0 && weapons_DvStrAddress != 0)
@@ -167,15 +136,15 @@ void invisibleToEnemy_func(bool x, uintptr_t addr)
 	}
 }
 
-void showMapBuildings_func(bool x, uintptr_t addr)
+void hideCloth_func(bool x, uintptr_t addr)
 {
 	if (addr != 0)
 	{
 		if (x) {
-			Replace(addr, { 0x75 }, { 0xeb });
+			Replace(addr, { 0xF3, 0x41, 0x0F, 0x10, 0x08 }, { 0x90, 0x90, 0x90, 0x90, 0x90 });
 		}
 		else {
-			Replace(addr, { 0xeb }, { 0x75 });
+			Replace(addr, { 0x90, 0x90, 0x90, 0x90, 0x90 }, { 0xF3, 0x41, 0x0F, 0x10, 0x08 });
 		}
 	}
 }

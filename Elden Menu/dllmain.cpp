@@ -33,15 +33,6 @@ bool ImGui_Initialised = false;
 std::vector<uint16_t> playerCamera = { 0x0F,0x86,MASKED,MASKED,MASKED,MASKED,0x0F,0x10,0x90 };
 uintptr_t playerCameraAddr = SigScan(playerCamera);
 
-std::vector<uint16_t> health = { 0x89,0x81,MASKED,MASKED,MASKED,MASKED,0xe8,MASKED,MASKED,MASKED,MASKED,0x84,0xc0,0x0f,0x85 };
-uintptr_t healthAddr = SigScan(health);
-
-std::vector<uint16_t> magic = { 0x89,0x87,MASKED,MASKED,MASKED,MASKED,0x48,0x8B,0x5C,0x24,0x50 };
-uintptr_t magicAddr = SigScan(magic);
-
-std::vector<uint16_t> stamina = { 0x89,0x87,MASKED,MASKED,MASKED,MASKED,0x48,0x8B,0x5C,0x24,MASKED,0x48,0x8B,0x74,0x24,MASKED,0x48,0x83,0xC4,MASKED,0x5F,0xC3 };
-uintptr_t staminaAddr = SigScan(stamina);
-
 std::vector<uint16_t> noWeight = { 0xff,0xc3,0x83,0xfb,MASKED,0x7c,MASKED,0x4c,0x8d,0x5c,0x24 };
 uintptr_t noWeightAddr = SigScan(noWeight);
 
@@ -61,9 +52,6 @@ uintptr_t FasterRespawnAddr = SigScan(FasterRespawn);
 std::vector<uint16_t> runes = { 0x89, 0x41, 0x6C, 0x41 };
 uintptr_t runesAddr = SigScan(runes);
 
-std::vector<uint16_t> speed1_08_1 = { 0xf3,0x0f,0x10,0x41,MASKED,0x48,0x8d,0x64,0x24,MASKED,0xff,0x64,0x24,MASKED,0xe9 };
-std::vector<uint16_t> speed1_09 = { 0xf3,0x0f,0x10,0x41,MASKED,0x48,0x8d,0x64,0x24,MASKED,0xff,0x64,0x24,MASKED,0x48,0x89,0x5c,0x24,MASKED,0x57,0x48,0x83,0xec,MASKED,0x8b,0xda };
-
 std::vector<uint16_t> vigor = { 0x8B, 0x7B, 0x3C, 0x48 };
 uintptr_t vigorAddr = SigScan(vigor);
 
@@ -82,11 +70,45 @@ uintptr_t multiJumpAddr = SigScan(multiJump);
 std::vector<uint16_t> invisibleToEnemy = { 0x74,MASKED,0x44,0x88,0xb9,MASKED,MASKED,MASKED,MASKED,0xe9 };
 uintptr_t invisibleToEnemyAddr = SigScan(invisibleToEnemy);
 
-std::vector<uint16_t> showMapBuildings = { 0x84,0xC0,0x75,MASKED,0x40,0x32,0xF6,0xEB,MASKED,0x41,0x0F,0xB6,0xF6,0x41,0x84,0xDE };
-uintptr_t showMapBuildingsAddr = SigScan(showMapBuildings);
+std::vector<uint16_t> runeMultiplier = { 0xf3,0x0f,0x59,0xc1,0xf3,0x0f,0x2c,0xf8,0x48,0x8b,0x8b };
+uintptr_t runeMultiplierAddr = SigScan(runeMultiplier);
 
-//std::vector<uint16_t> runeMultiplier = { 0xf3,0x0f,0x59,0xc1,0xf3,0x0f,0x2c,0xf8,0x48,0x8b,0x8b };
-//uintptr_t runeMultiplierAddr = SigScan(runeMultiplier);
+std::vector<uint16_t> playerHeight = { 0xf3,0x0f,0x10,0x8e,MASKED,MASKED,MASKED,MASKED,0x44,0x0f,0x28,0xd2 };
+uintptr_t playerHeightAddr = SigScan(playerHeight);
+
+std::vector<uint16_t> hideCloth = { 0xF3, 0x41, 0x0F, 0x10, 0x08, 0x0F, 0xC6 };
+uintptr_t hideClothAddr = SigScan(hideCloth);
+
+std::vector<uint16_t> GameDataMan = { 0x48,0x8B,0x05,MASKED,MASKED,MASKED,MASKED,0x48,0x85,0xC0,0x74,0x05,0x48,0x8B,0x40,0x58,0xC3,0xC3 }; // mov rax,[GameDataMan]
+uintptr_t GameDataManAddr = SigScan(GameDataMan);
+
+std::vector<uint16_t> WorldChrMan = { 0x48,0x8B,0x05,MASKED,MASKED,MASKED,MASKED,0x48,0x85,0xC0,0x74,0x0F,0x48,0x39,0x88 }; // mov rax,[WorldChrMan]
+uintptr_t WorldChrManAddr = SigScan(WorldChrMan);
+
+std::vector<uint16_t> EventFlagMan = { 0x48,0x8B,0x3D,MASKED,MASKED,MASKED,MASKED,0x48,0x85,0xFF,MASKED,MASKED,0x32,0xC0,0xE9 }; // mov rdi,[EventFlagMan] -> test rdi,rdi
+uintptr_t EventFlagManAddr = SigScan(EventFlagMan);
+
+std::vector<uint16_t> CHR_DBG_FLAGS = { 0x80,0x3D,MASKED,MASKED,MASKED,MASKED,0x00,0x0F,0x85,MASKED,MASKED,MASKED,MASKED,0x32,0xC0,0x48 }; // cmp byte ptr[CHR_DBG_FLAGS],00
+uintptr_t CHR_DBG_FLAGSAddr = SigScan(CHR_DBG_FLAGS);
+
+std::vector<uint16_t> showGraces = { 0x0F,0xB6,0x0D,MASKED,MASKED,MASKED,MASKED,0xE8,MASKED,MASKED,MASKED,MASKED,0x44,0x8B,0xE0 }; // movzx ecx,byte ptr [7FF6BE2A3D80]
+uintptr_t showGracesAddr = SigScan(showGraces);
+
+// to store the 4 op codes relatives to the corresponding address
+int* CHR_DBG_4bytesAddr = (int*)(CHR_DBG_FLAGSAddr + (byte)0x2);
+int* WorldChrMan_4bytesAddr = (int*)(WorldChrManAddr + (byte)0x3);
+int* GameDataMan_4bytesAddr = (int*)(GameDataManAddr + (byte)0x3);
+int* EventFlagMan_4bytesAddr = (int*)(EventFlagManAddr + (byte)0x3);
+int* showGraces_4bytesAddr = (int*)(showGracesAddr + (byte)0x3);
+// to read and store the 4 op codes as an address
+uintptr_t CHR_DBG_FLAGSReal = readAddress(CHR_DBG_FLAGSAddr, *CHR_DBG_4bytesAddr, 7);
+uintptr_t* WorldChrManReal = (uintptr_t*)readAddress(WorldChrManAddr, *WorldChrMan_4bytesAddr, 7);
+uintptr_t WorldChrManRealReal{ 0 };
+uintptr_t* GameDataManReal = (uintptr_t*)readAddress(GameDataManAddr, *GameDataMan_4bytesAddr, 7);
+uintptr_t GameDataManRealReal{ 0 };
+uintptr_t* EventFlagManReal = (uintptr_t*)readAddress(EventFlagManAddr, *EventFlagMan_4bytesAddr, 7);
+uintptr_t EventFlagManRealReal{ 0 };
+uintptr_t showGracesReal = readAddress(showGracesAddr, *showGraces_4bytesAddr, 7);
 
 bool isOpen = true;
 bool showModPage = false;
@@ -94,14 +116,21 @@ bool showAbout = false;
 bool showTips = false;
 bool showStats = true;
 bool showLevel = true;
+bool showSlotChanger = false;
+
 bool getRune = true;
-//bool getRuneMultiplier = true;
-bool changedSpeed = true;
+bool getRuneMultiplier = true;
+bool getPlayerHeight = true;
+bool getPlayerWidth = true;
+bool getPlayerLength = true;
 bool fovDetour = true;
 bool key1 = false;
 bool key2 = true;
 bool currentlyPressed = false;
 bool previouslyPressed = false;
+bool proportionDeactivated = false;
+bool mapsShowed = false;
+bool gracesShown = false;
 
 bool isGodMode = false;
 bool isInfMagic = false;
@@ -113,20 +142,33 @@ bool isNoRunes = false;
 bool isNoStoneRequired = false;
 bool isMultiJump = false;
 bool isInvisibleToEnemy = false;
-bool isShowMapBuildings = false;
+bool isHideCloth = false;
+bool isProportion = true;
+bool isWalkInTheAir = false;
+bool isUnlimitedArrow = false;
+bool isOneHitKill = false;
+bool isEnemiesDoNotAttack = false;
+bool isUnlimitedConsumables = false;
+bool isFreezeEnemies = false;
 
 const char* playerSpeed[] = { "Default", "x2", "x3", "x5", "x10" };
 static int playerSpeed_current = 0;
 static int playerSpeed_old = playerSpeed_current;
-/*
+
 const char* runeMoltiplicatore[] = { "Default (x1)", "x2", "x3", "x5", "x10" };
 static int runeMultiplier_current = 0;
 static int runeMultiplier_old = runeMultiplier_current;
-*/
+
 std::string window = "window_home";
 
 const auto lpGetValueNoWeight = (LPVOID)((DWORD_PTR)noWeightAddr);
-//const auto lpGetValueRuneMultiplier = (LPVOID)((DWORD_PTR)runeMultiplierAddr);
+const auto lpGetValueRuneMultiplier = (LPVOID)((DWORD_PTR)runeMultiplierAddr);
+
+const auto lpGetValuePlayerHeight = (LPVOID)((DWORD_PTR)playerHeightAddr);
+const auto lpGetValuePlayerWidth = (LPVOID)((DWORD_PTR)(playerHeightAddr - 0x4b));
+const auto lpGetValuePlayerLength = (LPVOID)((DWORD_PTR)(playerHeightAddr + 0x0f));
+
+const auto LocalPlayerOffset = 0x10ef8;
 
 const char credits[] = "Thanks to TechieW for the ModUtils header\nThanks to Hexinton for the cheat table";
 
@@ -389,6 +431,10 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 	ImGui::NewFrame();
 	ImGui::GetIO().MouseDrawCursor = ShowMenu;
 
+	WorldChrManRealReal = *WorldChrManReal;
+	GameDataManRealReal = *GameDataManReal;
+	EventFlagManRealReal = *EventFlagManReal;
+	
 	if (ShowMenu == true) {
 
 		if (GetKeyState(visualKey) & 0x8000) {
@@ -408,7 +454,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::GetIO().MouseDrawCursor = true;
 		}
 		key1 = true;
-
+		
 		ImGuiStyle* style = &ImGui::GetStyle();
 		style->WindowTitleAlign = ImVec2(0.5, 0.5);
 		style->Colors[ImGuiCol_TitleBgActive] = *color;
@@ -420,7 +466,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 		style->Colors[ImGuiCol_Border] = *color;
 		ImGui::SetNextWindowSize(ImVec2(350, 550));
 		style->Colors[ImGuiCol_ButtonHovered] = ImColor(100, 100, 100, 255);
-		ImGui::Begin("ELDEN MENU", &isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
+		ImGui::Begin("ELDEN MENU", &isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
 
 		style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
 
@@ -448,6 +494,56 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
 			style->Colors[ImGuiCol_ButtonActive] = ImColor(0, 180, 0, 255);
 			style->ItemSpacing = ImVec2(NULL, 8);
+			
+			if (isGodMode) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+			
+			if (ImGui::Button(ICON_FA_HEART "  GOD MODE", ImVec2(332, NULL)))
+			{
+				isGodMode = !isGodMode;
+
+				static byte* godMode = (byte*)CHR_DBG_FLAGSReal;
+				if (isGodMode) {
+					*godMode = 0x1;
+				}
+				else {
+					*godMode = 0x0;
+				}
+			}
+			ImGui::SameLine(); HelpMarker("Player can't die, HP bar will go down visually");
+
+			if (isInfStamina) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button(ICON_FA_HAND_FIST"  INF STAMINA", ImVec2(332, NULL)))
+			{
+				isInfStamina = !isInfStamina;
+
+				static byte* infStamina = (byte*)(CHR_DBG_FLAGSReal+(byte)0x4);
+				if (isInfStamina) {
+					*infStamina = 0x1;
+				}
+				else {
+					*infStamina = 0x0;
+				}
+			}
+			ImGui::SameLine(); HelpMarker("Unlimited stamina points");
 
 			if (isInfMagic) {
 				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
@@ -456,34 +552,23 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
 			}
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
-			if (magicAddr == 0) {
+			if (CHR_DBG_FLAGSReal == 0) {
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 			
 			if (ImGui::Button(ICON_FA_WAND_MAGIC_SPARKLES "  INFINITE MAGIC", ImVec2(332, NULL)))
 			{
 				isInfMagic = !isInfMagic;
-				infMagic(isInfMagic, magicAddr);
+
+				static byte* infMagic = (byte*)(CHR_DBG_FLAGSReal + (byte)0x5);
+				if (isInfMagic) {
+					*infMagic = 0x1;
+				}
+				else {
+					*infMagic = 0x0;
+				}
 			}
 			ImGui::SameLine(); HelpMarker("No magic points consume");
-			
-			if (isInfStamina) {
-				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
-			}
-			else {
-				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
-			}
-			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
-			if (staminaAddr == 0) {
-				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
-			}
-					
-			if (ImGui::Button(ICON_FA_HAND_FIST "  INFINITE STAMINA", ImVec2(332, NULL)))
-			{
-				isInfStamina = !isInfStamina;
-				infStamina(isInfStamina, staminaAddr);
-			}
-			ImGui::SameLine(); HelpMarker("No stamina points consume");
 			
 			if (isNoWeight) {
 				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
@@ -601,7 +686,13 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			if (dwRuneAddr != 0)
 			{
 				int* runes = (int*)dwRuneAddr;
-				ImGui::InputInt("RUNES", runes);
+				ImGui::InputInt("RUNES", runes, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
+			}
+
+			style->Colors[ImGuiCol_Button] = ImColor(0, 70, 150);
+			if (ImGui::Button("MAGIC SLOT EDITOR  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			{
+				showSlotChanger = !showSlotChanger;
 			}
 
 			style->Colors[ImGuiCol_Button] = ImColor(0, 70, 150);
@@ -622,70 +713,36 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 
 			style->Colors[ImGuiCol_ChildBg] = ImColor(25, 25, 25, 255);
 			ImGui::BeginChild("##", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y));
-		
-		    ImGui::Combo("GAME SPEED", &playerSpeed_current, playerSpeed, 5);
-			ImGui::SameLine(), HelpMarker("Changes game global speed (enemies and other entities are affected too, game time seems to be unaffected)");
+
+			ImGui::Combo("PLAYER SPEED", &playerSpeed_current, playerSpeed, 5);
+			ImGui::SameLine(), HelpMarker("Changes player speed only\n\nPS: needs to be changed and re-inserted after a screen loading has occurred");
 			if (playerSpeed_old != playerSpeed_current)
 			{
-
-				if (changedSpeed)
-				{
-					if (gameVer == "1.08.1") {
-						std::vector<uint16_t> speed = { speed1_08_1 };
-						uintptr_t playerSpeedAddr = SigScan(speed);
-
-						PDETOUR_TRAMPOLINE lpTrampolineData = {};
-						const auto lpGetValue = (LPVOID)((DWORD_PTR)playerSpeedAddr);
-
-						DetourTransactionBegin();
-						DetourUpdateThread(GetCurrentThread());
-						DetourAttachEx((PVOID*)&lpGetValue, (PVOID)&speedAsm_func, &lpTrampolineData, nullptr, nullptr);
-						DetourTransactionCommit();
-
-						const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
-						speedBack = lpDetourInfo->pbRemain;
-					}
-					else if (gameVer == "1.09") {
-						std::vector<uint16_t> speed = { speed1_09 };
-						uintptr_t playerSpeedAddr = SigScan(speed);
-
-						PDETOUR_TRAMPOLINE lpTrampolineData = {};
-						const auto lpGetValue = (LPVOID)((DWORD_PTR)playerSpeedAddr);
-
-						DetourTransactionBegin();
-						DetourUpdateThread(GetCurrentThread());
-						DetourAttachEx((PVOID*)&lpGetValue, (PVOID)&speedAsm_func, &lpTrampolineData, nullptr, nullptr);
-						DetourTransactionCommit();
-
-						const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
-						speedBack = lpDetourInfo->pbRemain;
-					}
-					else {
-						MessageBoxW(NULL, L"You haven't put a correct game version in config.ini file, game speed won't work\nIf you don't see the mouse cursor you can close this message from the windows taskbar", L"Error!", MB_ICONWARNING | MB_OK);
-					}
-				}
-				changedSpeed = false;
+				uintptr_t pSpeedAddr = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x28, 0x17c8 });
+				float* pSpeed = (float*)pSpeedAddr;
 
 				playerSpeed_old = playerSpeed_current;
+
 				if (playerSpeed_current == 0)
 				{
-					dwSpeed = 1;
+					*pSpeed = 1.0f;
 				}
 				else if (playerSpeed_current == 1)
 				{
-					dwSpeed = 2;
+					*pSpeed = 2.0f;
+					std::cout << "player speed: " << *pSpeed;
 				}
 				else if (playerSpeed_current == 2)
 				{
-					dwSpeed = 3;
+					*pSpeed = 3.0f;
 				}
 				else if (playerSpeed_current == 3)
 				{
-					dwSpeed = 5;
+					*pSpeed = 5.0f;
 				}
 				else if (playerSpeed_current == 4)
 				{
-					dwSpeed = 10;
+					*pSpeed = 10.0f;
 				}
 			}
 
@@ -743,7 +800,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			if (dwLevelAddr != 0)
 			{
 				int* level = (int*)dwLevelAddr;
-				ImGui::InputInt("LEVEL", level);
+				ImGui::InputInt("LEVEL", level, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 			}
 
 			if (showStats)
@@ -766,35 +823,35 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			{
 
 				int* vigor = (int*)dwVigorAddr;
-				ImGui::InputInt("VIGOR", vigor);
+				ImGui::InputInt("VIGOR", vigor, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
 				int* mindAddr = vigor + 0x1;
 				int* mind = (int*)mindAddr;
-				ImGui::InputInt("MIND", mind);
+				ImGui::InputInt("MIND", mind, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
 				int* enduranceAddr = mind + 0x1;
 				int* endurance = (int*)enduranceAddr;
-				ImGui::InputInt("ENDURANCE", endurance);
+				ImGui::InputInt("ENDURANCE", endurance, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
 				int* strengthAddr = endurance + 0x1;
 				int* strength = (int*)strengthAddr;
-				ImGui::InputInt("STRENGTH", strength);
+				ImGui::InputInt("STRENGTH", strength, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
 				int* dexterityAddr = strength + 0x1;
 				int* dexterity = (int*)dexterityAddr;
-				ImGui::InputInt("DEXTERITY", dexterity);
+				ImGui::InputInt("DEXTERITY", dexterity, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
 				int* intelligenceAddr = dexterity + 0x1;
 				int* intelligence = (int*)intelligenceAddr;
-				ImGui::InputInt("INTELLIGENCE", intelligence);
+				ImGui::InputInt("INTELLIGENCE", intelligence, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
 				int* faithAddr = intelligence + 0x1;
 				int* faith = (int*)faithAddr;
-				ImGui::InputInt("FAITH", faith);
+				ImGui::InputInt("FAITH", faith, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 
 				int* arcaneAddr = faith + 0x1;
 				int* arcane = (int*)arcaneAddr;
-				ImGui::InputInt("ARCANE", arcane);
+				ImGui::InputInt("ARCANE", arcane, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
 			}
 		}
 		if (window == "window_misc")
@@ -820,7 +877,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button("NO STONES REQUIRED", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_DIAMOND "  NO STONES REQUIRED", ImVec2(332, NULL)))
 			{
 				isNoStoneRequired = !isNoStoneRequired;
 				noStoneRequired(isNoStoneRequired, noStoneRequirementAddr);
@@ -838,7 +895,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 			
-			if (ImGui::Button("CHARACTER MULTI JUMP", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_ARROW_UP "  CHARACTER MULTI JUMP", ImVec2(332, NULL)))
 			{
 				isMultiJump = !isMultiJump;
 				multiJump_func(isMultiJump, (multiJumpAddr + 0x9));
@@ -856,31 +913,206 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button("INVISIBLE TO ENEMIES", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_EYE "  INVISIBLE TO ENEMIES", ImVec2(332, NULL)))
 			{
 				isInvisibleToEnemy = !isInvisibleToEnemy;
 				invisibleToEnemy_func(isInvisibleToEnemy, invisibleToEnemyAddr);
 			}
 			ImGui::SameLine(); HelpMarker("Enemies won't see you until you attack them (activate it before enemies have seen you)");
 
-			if (isShowMapBuildings) {
+			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			if (ImGui::Button(ICON_FA_EYE_SLASH "  SHOW GRACES + MAP (not persistent)", ImVec2(332, NULL)))
+			{
+				if (!gracesShown) {
+					static byte* gracesAddr = (byte*)showGracesReal;
+					*gracesAddr = 0x1;
+					gracesAddr = gracesAddr + 0x1;
+					*gracesAddr = 0x1;
+				}
+				gracesShown = true;
+			}
+			ImGui::SameLine(); HelpMarker("Show all graces + map (not persistent after game reload)");
+
+			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (EventFlagManRealReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button(ICON_FA_MAP "  UNLOCK ALL MAPS (persistent)", ImVec2(332, NULL)))
+			{
+				if (!mapsShowed) {
+					uintptr_t mapsAddr = FindDMAAddy((uintptr_t)&EventFlagManRealReal, { 0x28, 0x5dc });
+					byte* maps = (byte*)mapsAddr;
+
+					for (int i{ 0 }; i < 10; i++) {
+
+						if (i == 9) {
+							maps = maps + 0x3;
+							*maps = 0xff;
+							break;
+						}
+
+						*maps = 0xff;
+						maps = maps + 0x1;
+						std::cout << "1";
+					}
+				}
+				mapsShowed = true;
+			}
+			ImGui::SameLine(); HelpMarker("CHANGES ARE PERSISTENT!");
+
+			if (isWalkInTheAir) {
 				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
 			}
 			else {
 				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
 			}
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
-			if (showMapBuildingsAddr == 0) {
+			if (WorldChrManRealReal == 0) {
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button("SHOW ALL BUILDINGS ON MAP", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_PERSON_WALKING "  WALK IN THE AIR", ImVec2(332, NULL)))
 			{
-				isShowMapBuildings = !isShowMapBuildings;
-				showMapBuildings_func(isShowMapBuildings, (showMapBuildingsAddr + 0x2));
+				isWalkInTheAir = !isWalkInTheAir;
+
+				uintptr_t airWalk = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x68, 0x1d3 });
+				byte* airwalk = (byte*)airWalk;
+				
+				if (isWalkInTheAir) {
+					*airwalk = 0x1;
+				}
+				else {
+					*airwalk = 0x0;
+				}
+				
 			}
-			ImGui::SameLine(); HelpMarker("Marks all buildings on the map, can be toggled off");
-			/*
+			ImGui::SameLine(); HelpMarker("It will start to work after you walk on a lower surface than the one you are at, if you jump while in the air the player gets stuck, so just disable it\n\nPS: this needs to be disabled and re-enabled after a loading screen occured");
+
+			if (isUnlimitedArrow) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button(ICON_FA_ARROWS_DOWN_TO_LINE "  UNLIMITED ARROWS", ImVec2(332, NULL)))
+			{
+				isUnlimitedArrow = !isUnlimitedArrow;
+
+				static byte* unlimitedArrow = (byte*)(CHR_DBG_FLAGSReal + (byte)0x6);
+				if (isUnlimitedArrow) {
+					*unlimitedArrow = 0x1;
+				}
+				else {
+					*unlimitedArrow = 0x0;
+				}
+			}
+
+			if (isUnlimitedConsumables) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button(ICON_FA_BOWL_FOOD "  UNLIMITED CONSUMABLES", ImVec2(332, NULL)))
+			{
+				isUnlimitedConsumables = !isUnlimitedConsumables;
+
+				static byte* unlimitedConsumables = (byte*)(CHR_DBG_FLAGSReal + (byte)0x3);
+				if (isUnlimitedConsumables) {
+					*unlimitedConsumables = 0x1;
+				}
+				else {
+					*unlimitedConsumables = 0x0;
+				}
+			}
+
+			if (isOneHitKill) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button(ICON_FA_SKULL "  ONE HIT KILL", ImVec2(332, NULL)))
+			{
+				isOneHitKill = !isOneHitKill;
+
+				static byte* oneHitKill = (byte*)(CHR_DBG_FLAGSReal + (byte)0x2);
+				if (isOneHitKill) {
+					*oneHitKill = 0x1;
+				}
+				else {
+					*oneHitKill = 0x0;
+				}
+			}
+
+			if (isEnemiesDoNotAttack) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button( "ENEMIES DON'T ATTACK", ImVec2(332, NULL)))
+			{
+				isEnemiesDoNotAttack = !isEnemiesDoNotAttack;
+
+				static byte* enemiesDoNotAttack = (byte*)(CHR_DBG_FLAGSReal + (byte)0xd);
+				if (isEnemiesDoNotAttack) {
+					*enemiesDoNotAttack = 0x1;
+				}
+				else {
+					*enemiesDoNotAttack = 0x0;
+				}
+			}
+			ImGui::SameLine(); HelpMarker("Etities dont attack you");
+
+			if (isFreezeEnemies) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button("FREEZE ENEMIES", ImVec2(332, NULL)))
+			{
+				isFreezeEnemies = !isFreezeEnemies;
+
+				static byte* freezeEnemies = (byte*)(CHR_DBG_FLAGSReal + (byte)0xe);
+				if (isFreezeEnemies) {
+					*freezeEnemies = 0x1;
+				}
+				else {
+					*freezeEnemies = 0x0;
+				}
+			}
+			ImGui::SameLine(); HelpMarker("Enemies don't move");
+
+			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
 			ImGui::Combo("Runes multiplier", &runeMultiplier_current, runeMoltiplicatore, 5);
 			ImGui::SameLine(), HelpMarker("Multiplier of gathered runes");
 			if (runeMultiplier_old != runeMultiplier_current)
@@ -927,7 +1159,204 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				{
 					dwRuneMul = 10;
 				}
-			} */
+			}
+			
+			style->Colors[ImGuiCol_Button] = ImColor(0, 70, 150);
+			if (ImGui::Button("ENTITIES PROPORTION  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			{
+				window = "window_proportion";
+			}
+		}
+
+		if (window == "window_proportion")
+		{
+			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255);
+			style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			style->Colors[ImGuiCol_ButtonActive] = ImColor(0, 180, 0, 255);
+			style->ItemSpacing = ImVec2(NULL, 8);
+
+			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(332, NULL)))
+			{
+				window = "window_misc";
+			}
+
+			if (getPlayerHeight)
+			{
+				Replace(playerHeightAddr + 0x5, { MASKED, MASKED, MASKED }, { 0x90, 0x90, 0x90 });
+				PDETOUR_TRAMPOLINE lpTrampolineData = {};
+
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+				DetourAttachEx((PVOID*)&lpGetValuePlayerHeight, (PVOID)&playerHeightAsm_func, &lpTrampolineData, nullptr, nullptr);
+				DetourTransactionCommit();
+
+				const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
+				playerHeightBack = lpDetourInfo->pbRemain;
+
+				if (getPlayerWidth)
+				{
+					Replace((playerHeightAddr - 0x4b + 0x5), { MASKED, MASKED, MASKED }, { 0x90, 0x90, 0x90 });
+					PDETOUR_TRAMPOLINE lpTrampolineData = {};					
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttachEx((PVOID*)&lpGetValuePlayerWidth, (PVOID)&playerWidthAsm_func, &lpTrampolineData, nullptr, nullptr);
+					DetourTransactionCommit();
+
+					const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
+					playerWidthBack = lpDetourInfo->pbRemain;
+				}
+				getPlayerWidth = false;
+
+				if (getPlayerLength)
+				{
+					Replace((playerHeightAddr + 0x0f + 0x5), { MASKED, MASKED, MASKED }, { 0x90, 0x90, 0x90 });
+					PDETOUR_TRAMPOLINE lpTrampolineData = {};
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttachEx((PVOID*)&lpGetValuePlayerLength, (PVOID)&playerLengthAsm_func, &lpTrampolineData, nullptr, nullptr);
+					DetourTransactionCommit();
+
+					const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
+					playerLengthBack = lpDetourInfo->pbRemain;
+				}
+				getPlayerLength = false;
+			}
+			getPlayerHeight = false;
+
+			if (playerHeightAddr != 0)
+			{
+				ImGui::Checkbox("Proportion changes on/off", &isProportion);
+
+				if (isProportion) {
+
+					if (proportionDeactivated) {
+						getPlayerHeight = true;
+						getPlayerWidth = true;
+						getPlayerLength = true;
+					}
+					proportionDeactivated = false;
+
+					playerHeight_m128 = _mm_setr_ps(pHeight, 0.0f, 0.0f, 0.0f);
+					ImGui::SliderFloat("height", &pHeight, 0.2f, 3.0f);
+
+					playerWidth_m128 = _mm_setr_ps(pWidth, 0.0f, 0.0f, 0.0f);
+					ImGui::SliderFloat("width", &pWidth, 0.2f, 3.0f);
+
+					playerLength_m128 = _mm_setr_ps(pLength, 0.0f, 0.0f, 0.0f);
+					ImGui::SliderFloat("length", &pLength, 0.2f, 3.0f);
+
+				}
+				else if (!isProportion && !proportionDeactivated) {
+
+					proportionDeactivated = true;
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourDetach(&(PVOID&)lpGetValuePlayerHeight, playerHeightAsm_func);
+					DetourTransactionCommit();
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourDetach(&(PVOID&)lpGetValuePlayerWidth, playerWidthAsm_func);
+					DetourTransactionCommit();
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourDetach(&(PVOID&)lpGetValuePlayerLength, playerLengthAsm_func);
+					DetourTransactionCommit();			
+
+					Replace(playerHeightAddr + 0x5, { MASKED, MASKED, MASKED }, { 0x02, 0x00, 0x00 });
+					Replace((playerHeightAddr - 0x4b + 0x5), { MASKED, MASKED, MASKED }, { 0x02, 0x00, 0x00 });
+					Replace((playerHeightAddr + 0x0f + 0x5), { MASKED, MASKED, MASKED }, { 0x02, 0x00, 0x00 });
+				}
+			}
+
+			if (isHideCloth) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (hideClothAddr == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button("HIDE CLOTH", ImVec2(332, NULL)))
+			{
+				isHideCloth = !isHideCloth;
+				hideCloth_func(isHideCloth, hideClothAddr);
+			}
+			ImGui::SameLine(); HelpMarker("hide some clothes, useful with some proportions");
+		}
+
+		if (showSlotChanger)
+		{
+			static uintptr_t slot1Addr = FindDMAAddy((uintptr_t)&GameDataManRealReal, { 0x08, 0x518, 0x10 });
+			static uintptr_t slot2Addr = slot1Addr + 0x8;
+			static uintptr_t slot3Addr = slot2Addr + 0x8;
+			static uintptr_t slot4Addr = slot3Addr + 0x8;
+			static uintptr_t slot5Addr = slot4Addr + 0x8;
+			static uintptr_t slot6Addr = slot5Addr + 0x8;
+			static uintptr_t slot7Addr = slot6Addr + 0x8;
+			static uintptr_t slot8Addr = slot7Addr + 0x8;
+			static uintptr_t slot9Addr = slot8Addr + 0x8;
+			static uintptr_t slot10Addr = slot9Addr + 0x8;
+			static uintptr_t slot11Addr = slot10Addr + 0x8;
+			static uintptr_t slot12Addr = slot11Addr + 0x8;
+			static uintptr_t slot13Addr = slot12Addr + 0x8;
+			static uintptr_t slot14Addr = slot13Addr + 0x8;
+
+			//std::cout << "MAGIC SLOT 1: " << slot1Addr << '\n';
+			static int* magic_slot1 = (int*)slot1Addr;
+			static int* magic_slot2 = (int*)slot2Addr;
+			static int* magic_slot3 = (int*)slot3Addr;
+			static int* magic_slot4 = (int*)slot4Addr;
+			static int* magic_slot5 = (int*)slot5Addr;
+			static int* magic_slot6 = (int*)slot6Addr;
+			static int* magic_slot7 = (int*)slot7Addr;
+			static int* magic_slot8 = (int*)slot8Addr;
+			static int* magic_slot9 = (int*)slot9Addr;
+			static int* magic_slot10 = (int*)slot10Addr;
+			static int* magic_slot11 = (int*)slot11Addr;
+			static int* magic_slot12 = (int*)slot12Addr;
+			static int* magic_slot13 = (int*)slot13Addr;
+			static int* magic_slot14 = (int*)slot14Addr;
+			//std::cout << "slo1 contain ID: " << *magic_slot1;
+
+			ImGui::SetNextWindowSize(ImVec2(350, 580));
+			style->Colors[ImGuiCol_Text] = ImColor(0, 0, 0, 255);
+			ImGui::Begin("MAGIC SLOT EDITOR", &showSlotChanger, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar);
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
+			
+			ImGui::Text("INFO ");
+			ImGui::SameLine(); HelpMarker("Every magic has it's own ID, you can get it from the button below, than insert the one you want in a slot\n\nYou can even insert id's in slots you haven't still unlocked\n\nSlots which has -1 means they are unassigned or still locked\n\nMagic which occupies 2 slots still displays as one slot in this window");
+
+			ImGui::InputInt("slot  1 magic ID", magic_slot1,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  2 magic ID", magic_slot2,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  3 magic ID", magic_slot3,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  4 magic ID", magic_slot4,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  5 magic ID", magic_slot5,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  6 magic ID", magic_slot6,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  7 magic ID", magic_slot7,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  8 magic ID", magic_slot8,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot  9 magic ID", magic_slot9,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot 10 magic ID", magic_slot10, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot 11 magic ID", magic_slot11, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot 12 magic ID", magic_slot12, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot 13 magic ID", magic_slot13, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::InputInt("slot 14 magic ID", magic_slot14, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+
+			if (ImGui::Button("open magic ID's list")) {
+				
+				static std::string magicPath = (GetModuleFolderPath() + "\\Magic.txt");
+
+				ShellExecute(NULL, "open", magicPath.c_str(), NULL, NULL, SW_SHOW);
+			}
+
+			ImGui::End();
 		}
 
 		if (window == "window_themes")
@@ -1018,7 +1447,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::Text("Coded by ImAxel0");
 			ImGui::Text(credits);
 			ImGui::SetCursorPos(ImVec2(285, 110));
-			ImGui::Text("v0.2.2");
+			ImGui::Text("v0.3.0");
 			style->Colors[ImGuiCol_Text] = ImColor(49, 154, 236);
 			ImGui::SetCursorPos(ImVec2(5, 110));
 			ImGui::Selectable("Mod page", &showModPage, NULL, ImVec2(80, NULL));
