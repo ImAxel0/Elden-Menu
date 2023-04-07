@@ -533,4 +533,24 @@ namespace ModUtils
 		MemCopy((address + 6), (uintptr_t)&destination, 8);
 		Log("Created jump from %p to %p with a clearance of %i", address, destination, clearance);
 	}
+
+	// Gets the address of a multi-level pointer
+	uintptr_t FindDMAAddy(uintptr_t ptr, std::vector<unsigned int> offsets)
+	{
+		uintptr_t addr = ptr;
+		for (unsigned int i = 0; i < offsets.size(); ++i)
+		{
+			addr = *(uintptr_t*)addr;
+			addr += offsets[i];
+		}
+		return addr;
+	}
+
+	// Gets the address written in an ASM instruction eg. mov eax, [address]
+	inline uintptr_t readAddress(uintptr_t instructionAddress, int address4Bytes, int instructionBytesNum)
+	{
+		uintptr_t address = instructionAddress + address4Bytes;
+
+		return (address + instructionBytesNum);
+	}
 }
