@@ -155,6 +155,9 @@
     <ClInclude Include="DirectX12Demo.h">
       <Filter>File di intestazione</Filter>
     </ClInclude>
+    <ClInclude Include="bosses.h">
+      <Filter>File di intestazione</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="asm_funcs.asm">

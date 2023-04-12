@@ -168,6 +168,7 @@
     <ClCompile Include="MinHook\Src\trampoline.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bosses.h" />
     <ClInclude Include="DirectX12.h" />
     <ClInclude Include="DirectX12Demo.h" />
     <ClInclude Include="font.h" />

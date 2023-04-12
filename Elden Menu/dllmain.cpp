@@ -19,6 +19,7 @@
 #include <xmmintrin.h>
 #include <Xinput.h>
 #include "ini.h"
+#include "bosses.h"
 
 #pragma comment (lib, "xinput")
 #pragma comment (lib, "Shell32")
@@ -94,12 +95,16 @@ uintptr_t CHR_DBG_FLAGSAddr = SigScan(CHR_DBG_FLAGS);
 std::vector<uint16_t> showGraces = { 0x0F,0xB6,0x0D,MASKED,MASKED,MASKED,MASKED,0xE8,MASKED,MASKED,MASKED,MASKED,0x44,0x8B,0xE0 }; // movzx ecx,byte ptr [7FF6BE2A3D80]
 uintptr_t showGracesAddr = SigScan(showGraces);
 
+std::vector<uint16_t> fps = { 0x48,0x8B,0x0D,MASKED,MASKED,MASKED,MASKED,0x80,0xBB,0xD7,0x00,0x00,0x00,0x00,0x0F,0x84,0xCE,0x00,0x00,0x00,0x48,0x85,0xC9,0x75,0x2E };
+uintptr_t fpsAddr = SigScan(fps);
+
 // to store the 4 op codes relatives to the corresponding address
 int* CHR_DBG_4bytesAddr = (int*)(CHR_DBG_FLAGSAddr + (byte)0x2);
 int* WorldChrMan_4bytesAddr = (int*)(WorldChrManAddr + (byte)0x3);
 int* GameDataMan_4bytesAddr = (int*)(GameDataManAddr + (byte)0x3);
 int* EventFlagMan_4bytesAddr = (int*)(EventFlagManAddr + (byte)0x3);
 int* showGraces_4bytesAddr = (int*)(showGracesAddr + (byte)0x3);
+int* FPS_4bytesAddr = (int*)(fpsAddr + (byte)0x3);
 // to read and store the 4 op codes as an address
 uintptr_t CHR_DBG_FLAGSReal = readAddress(CHR_DBG_FLAGSAddr, *CHR_DBG_4bytesAddr, 7);
 uintptr_t* WorldChrManReal = (uintptr_t*)readAddress(WorldChrManAddr, *WorldChrMan_4bytesAddr, 7);
@@ -109,14 +114,22 @@ uintptr_t GameDataManRealReal{ 0 };
 uintptr_t* EventFlagManReal = (uintptr_t*)readAddress(EventFlagManAddr, *EventFlagMan_4bytesAddr, 7);
 uintptr_t EventFlagManRealReal{ 0 };
 uintptr_t showGracesReal = readAddress(showGracesAddr, *showGraces_4bytesAddr, 7);
+uintptr_t* FPSReal = (uintptr_t*)readAddress(fpsAddr, *FPS_4bytesAddr, 7);
+uintptr_t FPSRealReal{ 0 };
 
 bool isOpen = true;
+bool isBossesOpen = true;
 bool showModPage = false;
 bool showAbout = false;
 bool showTips = false;
 bool showStats = true;
 bool showLevel = true;
 bool showSlotChanger = false;
+bool showBossesUI = false;
+bool showFOV = false;
+bool fpsDetour = true;
+bool showFPS = false;
+bool showBossConfirmationWindow = false;
 
 bool getRune = true;
 bool getRuneMultiplier = true;
@@ -131,6 +144,8 @@ bool previouslyPressed = false;
 bool proportionDeactivated = false;
 bool mapsShowed = false;
 bool gracesShown = false;
+bool twinUnlocked = false;
+bool bladesUnlocked = false;
 
 bool isGodMode = false;
 bool isInfMagic = false;
@@ -163,6 +178,7 @@ std::string window = "window_home";
 
 const auto lpGetValueNoWeight = (LPVOID)((DWORD_PTR)noWeightAddr);
 const auto lpGetValueRuneMultiplier = (LPVOID)((DWORD_PTR)runeMultiplierAddr);
+const auto lpGetValueFOV = (LPVOID)((DWORD_PTR)fovAddr);
 
 const auto lpGetValuePlayerHeight = (LPVOID)((DWORD_PTR)playerHeightAddr);
 const auto lpGetValuePlayerWidth = (LPVOID)((DWORD_PTR)(playerHeightAddr - 0x4b));
@@ -330,7 +346,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			io.LogFilename = nullptr;
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-			io.Fonts->AddFontFromMemoryTTF(&OpenSans_Italic_ttf, 1, 20.0f);
+			io.Fonts->AddFontFromMemoryTTF(&OpenSans_Regular_ttf, 1, 20.0f);
 			float baseFontSize = 13.0f;
 			float iconFontSize = baseFontSize * 2.0f / 3.0f;
 			static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
@@ -434,7 +450,8 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 	WorldChrManRealReal = *WorldChrManReal;
 	GameDataManRealReal = *GameDataManReal;
 	EventFlagManRealReal = *EventFlagManReal;
-	
+	FPSRealReal = *FPSReal;
+
 	if (ShowMenu == true) {
 
 		if (GetKeyState(visualKey) & 0x8000) {
@@ -464,7 +481,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
 		}			
 		style->Colors[ImGuiCol_Border] = *color;
-		ImGui::SetNextWindowSize(ImVec2(350, 550));
+		ImGui::SetNextWindowSize(ImVec2(350, 670));
 		style->Colors[ImGuiCol_ButtonHovered] = ImColor(100, 100, 100, 255);
 		ImGui::Begin("ELDEN MENU", &isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
 
@@ -705,6 +722,73 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			{
 				window = "window_misc";
 			}
+			
+			if (ImGui::Button("REVIVE BOSSES  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			{
+				showBossesUI = !showBossesUI;
+			}
+			
+			if (showBossesUI)
+			{
+				ImGui::SetNextWindowSize(ImVec2(480, NULL));
+				style->Colors[ImGuiCol_Text] = ImColor(0, 0, 0, 255);
+				ImGui::Begin("REVIVE/KILL BOSSES", &isBossesOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+				style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+
+				if (bosses_window == "main") {
+					ImGui::Text("INFO");
+					ImGui::SameLine(); HelpMarker("A fast travel, grace sit or game reload is required for changes to take effect");
+				}
+
+				bossesCheckUI();
+
+				if (bosses_window != "main")
+				{
+					if (ImGui::SmallButton("REVIVE SELECTED")) {
+						refreshBosses(EventFlagManRealReal);
+						applyBosses(0x00);
+					}
+					ImGui::SameLine(150.0f);
+					
+					if (ImGui::SmallButton("KILL SELECTED")) {
+
+						showBossConfirmationWindow = true;
+					}
+					if (showBossConfirmationWindow) {
+
+						ImGui::SetCursorPos(ImVec2(100, 370));
+						style->Colors[ImGuiCol_ChildBg] = ImColor(36, 36, 36, 255);
+						style->Colors[ImGuiCol_Border] = *color;
+						style->ChildBorderSize = 3.0f;
+						ImGui::BeginChild("##", ImVec2(260, 60), true, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoTitleBar);
+						ImGui::Text("Are you sure you want to kill them?");
+						style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+						if (ImGui::SmallButton("No")) {
+
+							showBossConfirmationWindow = false;
+						}
+						ImGui::SameLine(50.0f);
+						style->Colors[ImGuiCol_Text] = ImColor(0, 255, 0);
+						if (ImGui::SmallButton("Yes")) {
+
+							refreshBosses(EventFlagManRealReal);
+							applyBosses(0xFF);
+							showBossConfirmationWindow = false;
+						}
+						ImGui::EndChild();
+						style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+					}				
+				}
+
+				if (!isBossesOpen) {
+					bosses_window = "main";
+					showBossesUI = false;
+					isBossesOpen = true;
+				}
+				ImGui::End();
+			}
+			
 			style->Colors[ImGuiCol_Button] = ImColor(24, 152, 255);
 			if (ImGui::Button(ICON_FA_PAINTBRUSH "  THEMES  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
 			{
@@ -745,27 +829,64 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 					*pSpeed = 10.0f;
 				}
 			}
+			
+			ImGui::Checkbox("Custom FOV", &showFOV);
 
-			if (fovDetour)
+			if (showFOV)
 			{
-				Replace(fovAddr, { 0x80, 0xbb, MASKED, MASKED, MASKED, MASKED, 0x00 }, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, });
-				PDETOUR_TRAMPOLINE lpTrampolineData = {};
-				const auto lpGetValue = (LPVOID)((DWORD_PTR)fovAddr);
+				if (fovDetour)
+				{
+					Replace(fovAddr, { 0x80, 0xbb, MASKED, MASKED, MASKED, MASKED, 0x00 }, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+					PDETOUR_TRAMPOLINE lpTrampolineData = {};
 
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttachEx((PVOID*)&lpGetValueFOV, (PVOID)&fovAsm_func, &lpTrampolineData, nullptr, nullptr);
+					DetourTransactionCommit();
+
+					const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
+					fovBack = lpDetourInfo->pbRemain;
+				}
+				fovDetour = false;
+
+				if (fovAddr != 0)
+				{
+					fov = _mm_setr_ps(FieldOfView, 0.0f, 0.0f, 0.0f);
+					ImGui::SliderFloat("FOV", &FieldOfView, 30.0f, 110.0f);
+				}
+			}
+			
+			if (!showFOV && fovDetour == false)
+			{
 				DetourTransactionBegin();
 				DetourUpdateThread(GetCurrentThread());
-				DetourAttachEx((PVOID*)&lpGetValue, (PVOID)&fovAsm_func, &lpTrampolineData, nullptr, nullptr);
+				DetourDetach(&(PVOID&)lpGetValueFOV, fovAsm_func);
 				DetourTransactionCommit();
-
-				const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
-				fovBack = lpDetourInfo->pbRemain;
+				Replace(fovAddr, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, }, { 0x80, 0xbb, 0x88, 0x04, 0x00, 0x00, 0x00 });
+				fovDetour = true;
 			}
-			fovDetour = false;
-		
-			if (fovAddr != 0)
+
+			ImGui::Checkbox("Custom FPS limit", &showFPS);
+
+			if (showFPS)
 			{
-				fov = _mm_setr_ps(FieldOfView, 0.0f, 0.0f, 0.0f);
-				ImGui::SliderFloat("FOV", &FieldOfView, 30.0f, 110.0f);
+				static float* frametime = (float*)(FPSRealReal + 0x2cc);
+
+				if (fpsDetour) {
+					Replace(FPSRealReal + 0x2d0, { 0x00 }, { 0x01 });
+				}
+				fpsDetour = false;
+
+				if (FPSRealReal != 0)
+				{
+					ImGui::SliderFloat("FPS limit", frametime, 30, 200);
+				}
+			}
+
+			if (!showFPS && fpsDetour == false)
+			{
+				Replace(FPSRealReal + 0x2d0, { 0x01 }, { 0x00 });
+				fpsDetour = true;
 			}
 			ImGui::EndChild();
 		}
@@ -959,6 +1080,68 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 					}
 				}
 				mapsShowed = true;
+			}
+			ImGui::SameLine(); HelpMarker("CHANGES ARE PERSISTENT!");
+
+			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (EventFlagManRealReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button("Full Unlock Twin Maiden Husk Shop (persistent)", ImVec2(332, NULL)))
+			{
+				if (!twinUnlocked) {
+					uintptr_t twinAddr = FindDMAAddy((uintptr_t)&EventFlagManRealReal, { 0x28, 0x153A6D });
+					byte* twin = (byte*)twinAddr;
+
+					for (int i{ 0 }; i < 8; i++) {
+
+						*twin = 0xff;
+						twin = twin + 0x1;
+					}
+				}
+				twinUnlocked = true;
+			}
+			ImGui::SameLine(); HelpMarker("CHANGES ARE PERSISTENT!");
+
+			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (EventFlagManRealReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button("UNLOCK ALL WHETBLADES (persistent)", ImVec2(332, NULL)))
+			{
+				if (!bladesUnlocked) {
+					uintptr_t bladesAddr = FindDMAAddy((uintptr_t)&EventFlagManRealReal, { 0x28, 0x79F });
+					byte* blades = (byte*)bladesAddr;
+
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x2;
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x2;
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x1;
+					*blades = 0xff;
+					blades = blades + 0x2;
+					*blades = 0xff;
+				}
+				bladesUnlocked = true;
 			}
 			ImGui::SameLine(); HelpMarker("CHANGES ARE PERSISTENT!");
 
@@ -1447,7 +1630,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::Text("Coded by ImAxel0");
 			ImGui::Text(credits);
 			ImGui::SetCursorPos(ImVec2(285, 110));
-			ImGui::Text("v0.3.0");
+			ImGui::Text("v0.4.0");
 			style->Colors[ImGuiCol_Text] = ImColor(49, 154, 236);
 			ImGui::SetCursorPos(ImVec2(5, 110));
 			ImGui::Selectable("Mod page", &showModPage, NULL, ImVec2(80, NULL));
