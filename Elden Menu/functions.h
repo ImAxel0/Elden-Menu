@@ -148,3 +148,25 @@ void hideCloth_func(bool x, uintptr_t addr)
 		}
 	}
 }
+
+void pauseGame(bool x, uintptr_t pauseAddr)
+{
+	if (x) {
+		Replace(pauseAddr + 0x6, { 0x00 }, { 0x01 });
+	}
+	else {
+		Replace(pauseAddr + 0x6, { 0x01 }, { 0x00 });
+	}
+}
+
+void mapInCombat(bool x, uintptr_t MapInCombat1Addr, uintptr_t MapInCombat2Addr)
+{
+	if (x) {
+		Replace(MapInCombat1Addr, { MASKED, MASKED, MASKED, MASKED, MASKED }, { 0x48, 0x31, 0xC0, 0x90, 0x90 });
+		Replace(MapInCombat2Addr, { 0x74 }, { 0xeb });
+	}
+	else {
+		Replace(MapInCombat1Addr, { 0x48, 0x31, 0xC0, 0x90, 0x90 }, { 0xE8, 0xE4, 0x8E, 0x3A, 0x00 });
+		Replace(MapInCombat2Addr, { 0xeb }, { 0x74 });
+	}
+}

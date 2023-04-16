@@ -20,6 +20,8 @@
 #include <Xinput.h>
 #include "ini.h"
 #include "bosses.h"
+#include "npc.h"
+#include "teleport.h"
 
 #pragma comment (lib, "xinput")
 #pragma comment (lib, "Shell32")
@@ -98,6 +100,18 @@ uintptr_t showGracesAddr = SigScan(showGraces);
 std::vector<uint16_t> fps = { 0x48,0x8B,0x0D,MASKED,MASKED,MASKED,MASKED,0x80,0xBB,0xD7,0x00,0x00,0x00,0x00,0x0F,0x84,0xCE,0x00,0x00,0x00,0x48,0x85,0xC9,0x75,0x2E };
 uintptr_t fpsAddr = SigScan(fps);
 
+std::vector<uint16_t> pause = { 0x80, 0xBB, 0x28, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x84 };
+uintptr_t pauseAddr = SigScan(pause);
+
+std::vector<uint16_t> NetManImp = { 0x48,0x8B,0x05,MASKED, MASKED, MASKED, MASKED,0x80,0x78,MASKED,0x00,MASKED, MASKED,0x48,0x8D,0x9F,MASKED, MASKED, MASKED, MASKED,0x48,0x8B,0x03 };
+uintptr_t NetManImpAddr = SigScan(NetManImp);
+
+std::vector<uint16_t> MapInCombat1 = { 0xE8,MASKED,MASKED,MASKED,MASKED,0x84,0xC0,0x75,MASKED,0x38,0x83,0xF2,0x3B,0x00,0x00 };
+uintptr_t MapInCombat1Addr = SigScan(MapInCombat1);
+
+std::vector<uint16_t> MapInCombat2 = { 0x74,0x2E,0xC7,0x45,0x50,0x58,0x02,0x00,0x00,0xC7,0x45,0x54,0x02,0x00,0x00,0x00,0xC7,0x45,0x58,0x01,0x00,0x00,0x00 };
+uintptr_t MapInCombat2Addr = SigScan(MapInCombat2);
+
 // to store the 4 op codes relatives to the corresponding address
 int* CHR_DBG_4bytesAddr = (int*)(CHR_DBG_FLAGSAddr + (byte)0x2);
 int* WorldChrMan_4bytesAddr = (int*)(WorldChrManAddr + (byte)0x3);
@@ -105,6 +119,7 @@ int* GameDataMan_4bytesAddr = (int*)(GameDataManAddr + (byte)0x3);
 int* EventFlagMan_4bytesAddr = (int*)(EventFlagManAddr + (byte)0x3);
 int* showGraces_4bytesAddr = (int*)(showGracesAddr + (byte)0x3);
 int* FPS_4bytesAddr = (int*)(fpsAddr + (byte)0x3);
+int* NetManImp_4bytesAddr = (int*)(NetManImpAddr + (byte)0x3);
 // to read and store the 4 op codes as an address
 uintptr_t CHR_DBG_FLAGSReal = readAddress(CHR_DBG_FLAGSAddr, *CHR_DBG_4bytesAddr, 7);
 uintptr_t* WorldChrManReal = (uintptr_t*)readAddress(WorldChrManAddr, *WorldChrMan_4bytesAddr, 7);
@@ -116,9 +131,13 @@ uintptr_t EventFlagManRealReal{ 0 };
 uintptr_t showGracesReal = readAddress(showGracesAddr, *showGraces_4bytesAddr, 7);
 uintptr_t* FPSReal = (uintptr_t*)readAddress(fpsAddr, *FPS_4bytesAddr, 7);
 uintptr_t FPSRealReal{ 0 };
+uintptr_t* NetManImpReal = (uintptr_t*)readAddress(NetManImpAddr, *NetManImp_4bytesAddr, 7);
+uintptr_t NetManImpRealReal{ 0 };
 
 bool isOpen = true;
 bool isBossesOpen = true;
+bool isNPCOpen = true;
+bool isTeleportOpen = true;
 bool showModPage = false;
 bool showAbout = false;
 bool showTips = false;
@@ -126,16 +145,21 @@ bool showStats = true;
 bool showLevel = true;
 bool showSlotChanger = false;
 bool showBossesUI = false;
+bool showNPCUI = false;
+bool showTeleportUI = false;
+bool showPlayerSpeed = false;
 bool showFOV = false;
 bool fpsDetour = true;
 bool showFPS = false;
 bool showBossConfirmationWindow = false;
+bool showNPCConfirmationWindow = false;
 
 bool getRune = true;
 bool getRuneMultiplier = true;
 bool getPlayerHeight = true;
 bool getPlayerWidth = true;
 bool getPlayerLength = true;
+bool getSpeed = false;
 bool fovDetour = true;
 bool key1 = false;
 bool key2 = true;
@@ -148,6 +172,7 @@ bool twinUnlocked = false;
 bool bladesUnlocked = false;
 
 bool isGodMode = false;
+bool isAllGodMode = false;
 bool isInfMagic = false;
 bool isInfStamina = false;
 bool isNoWeight = false;
@@ -165,10 +190,15 @@ bool isOneHitKill = false;
 bool isEnemiesDoNotAttack = false;
 bool isUnlimitedConsumables = false;
 bool isFreezeEnemies = false;
+bool isPause = false;
+bool isMapInCombat = false;
 
 const char* playerSpeed[] = { "Default", "x2", "x3", "x5", "x10" };
 static int playerSpeed_current = 0;
 static int playerSpeed_old = playerSpeed_current;
+
+float* pSpeed{};
+float oldSpeed{1.0f};
 
 const char* runeMoltiplicatore[] = { "Default (x1)", "x2", "x3", "x5", "x10" };
 static int runeMultiplier_current = 0;
@@ -198,6 +228,7 @@ ImColor red = { 255, 0, 0 };
 ImColor cyan = { 0, 255, 255 };
 ImColor black = { 0, 0, 0 };
 ImColor white = { 255, 255, 255 };
+
 ImColor* color = &cyan;
 
 struct DETOUR_ALIGN
@@ -451,6 +482,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 	GameDataManRealReal = *GameDataManReal;
 	EventFlagManRealReal = *EventFlagManReal;
 	FPSRealReal = *FPSReal;
+	NetManImpRealReal = *NetManImpReal;
 
 	if (ShowMenu == true) {
 
@@ -471,7 +503,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::GetIO().MouseDrawCursor = true;
 		}
 		key1 = true;
-		
+
 		ImGuiStyle* style = &ImGui::GetStyle();
 		style->WindowTitleAlign = ImVec2(0.5, 0.5);
 		style->Colors[ImGuiCol_TitleBgActive] = *color;
@@ -481,12 +513,14 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
 		}			
 		style->Colors[ImGuiCol_Border] = *color;
-		ImGui::SetNextWindowSize(ImVec2(350, 670));
+		ImGui::SetNextWindowSize(ImVec2(370, 720)); // x was 370, y was 670
+		style->WindowBorderSize = 3.0f;
 		style->Colors[ImGuiCol_ButtonHovered] = ImColor(100, 100, 100, 255);
-		ImGui::Begin("ELDEN MENU", &isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoScrollbar);
+
+		ImGui::Begin("ELDEN MENU", &isOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_MenuBar);
 
 		style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
-
+		
 		ImGui::BeginMenuBar();
 
 		style->Colors[ImGuiCol_Button] = ImColor(60, 60, 60, 255);
@@ -503,8 +537,24 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			showTips = !showTips;
 		}
 
-		ImGui::EndMenuBar();
+		if (isPause) {
+			style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+		}
+		else {
+			style->Colors[ImGuiCol_Button] = ImColor(60, 60, 60, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(80, 80, 80, 255);
+		}
+		style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+		if (pauseAddr == 0) {
+			style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+		}
 
+		if (ImGui::SmallButton("Pause game " ICON_FA_STOP))
+		{
+			isPause = !isPause;
+			pauseGame(isPause, pauseAddr);
+		}
+		ImGui::EndMenuBar();
+		
 		if (window == "window_home")
 		{
 			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255);
@@ -523,7 +573,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 			
-			if (ImGui::Button(ICON_FA_HEART "  GOD MODE", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_HEART "  GOD MODE", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isGodMode = !isGodMode;
 
@@ -548,7 +598,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_HAND_FIST"  INF STAMINA", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_HAND_FIST"  INF STAMINA", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isInfStamina = !isInfStamina;
 
@@ -573,7 +623,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 			
-			if (ImGui::Button(ICON_FA_WAND_MAGIC_SPARKLES "  INFINITE MAGIC", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_WAND_MAGIC_SPARKLES "  INFINITE MAGIC", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isInfMagic = !isInfMagic;
 
@@ -598,7 +648,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 			
-			if (ImGui::Button(ICON_FA_WEIGHT_SCALE "  NO WEIGHT", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_WEIGHT_SCALE "  NO WEIGHT", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isNoWeight = !isNoWeight;
 
@@ -634,7 +684,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 						
-			if (ImGui::Button(ICON_FA_XMARK "  NO STATS REQUIREMENT", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_XMARK "  NO STATS REQUIREMENT", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isNoStatsRequirement = !isNoStatsRequirement;
 				noStatsRequirement(isNoStatsRequirement, magic_RvIntAddress, magic_DvIntAddress, weapons_RvStrAddress, weapons_DvStrAddress);
@@ -652,7 +702,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_FORWARD_FAST "  FASTER RESPAWN", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_FORWARD_FAST "  FASTER RESPAWN", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isFasterRespawn = !isFasterRespawn;
 				fasterRespawn(isFasterRespawn, FasterRespawnAddr);
@@ -670,7 +720,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 					
-			if (ImGui::Button(ICON_FA_SACK_DOLLAR "  INFINITE RUNES", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_SACK_DOLLAR "  INFINITE RUNES", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isNoRunes = !isNoRunes;
 				noRunes(isNoRunes, runesAddr);
@@ -707,23 +757,23 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			}
 
 			style->Colors[ImGuiCol_Button] = ImColor(0, 70, 150);
-			if (ImGui::Button("MAGIC SLOT EDITOR  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			if (ImGui::Button("MAGIC SLOT EDITOR  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				showSlotChanger = !showSlotChanger;
 			}
 
 			style->Colors[ImGuiCol_Button] = ImColor(0, 70, 150);
-			if (ImGui::Button("STATS CHANGER  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			if (ImGui::Button("STATS CHANGER  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_stats";
 			}
 
-			if (ImGui::Button("MISC  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			if (ImGui::Button("MISC  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_misc";
 			}
 			
-			if (ImGui::Button("REVIVE BOSSES  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			if (ImGui::Button("REVIVE BOSSES  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				showBossesUI = !showBossesUI;
 			}
@@ -788,9 +838,103 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				}
 				ImGui::End();
 			}
+
+			if (ImGui::Button("REVIVE NPC's  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
+			{
+				showNPCUI = !showNPCUI;
+			}
+
+			if (showNPCUI)
+			{
+				ImGui::SetNextWindowSize(ImVec2(300, NULL));
+				style->Colors[ImGuiCol_Text] = ImColor(0, 0, 0, 255);
+				ImGui::Begin("REVIVE/KILL NPC's", &isNPCOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+				style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+
+				ImGui::Text("INFO");
+				ImGui::SameLine(); HelpMarker("A fast travel, grace sit or game reload is required for changes to take effect");
+
+				NPCCheckUI();
+
+				if (ImGui::SmallButton("REVIVE SELECTED")) {
+					refreshNPC(EventFlagManRealReal);
+					reviveNPC();
+				}
+				ImGui::SameLine(150.0f);
+
+				if (ImGui::SmallButton("KILL SELECTED")) {
+
+					showNPCConfirmationWindow = true;
+				}
+				if (showNPCConfirmationWindow) {
+
+					ImGui::SetCursorPos(ImVec2(15, 370));
+					style->Colors[ImGuiCol_ChildBg] = ImColor(36, 36, 36, 255);
+					style->Colors[ImGuiCol_Border] = *color;
+					style->ChildBorderSize = 3.0f;
+					ImGui::BeginChild("##", ImVec2(260, 60), true, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoTitleBar);
+					ImGui::Text("Are you sure you want to kill them?");
+					style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+					if (ImGui::SmallButton("No")) {
+
+						showNPCConfirmationWindow = false;
+					}
+					ImGui::SameLine(50.0f);
+					style->Colors[ImGuiCol_Text] = ImColor(0, 255, 0);
+					if (ImGui::SmallButton("Yes")) {
+
+						refreshNPC(EventFlagManRealReal);
+						killNPC();
+						showNPCConfirmationWindow = false;
+					}
+					ImGui::EndChild();
+					style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+				}
+
+				if (!isNPCOpen) {
+					showNPCUI = false;
+					isNPCOpen = true;
+				}
+				ImGui::End();
+			}
+
+			if (ImGui::Button("TELEPORT  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x - 1, NULL)))
+			{
+				showTeleportUI = !showTeleportUI;
+			}
+
+			if (showTeleportUI)
+			{
+				ImGui::SetNextWindowSize(ImVec2(ImGui::GetContentRegionAvail().x, NULL));
+				style->Colors[ImGuiCol_Text] = ImColor(0, 0, 0, 255);
+				ImGui::Begin("TELEPORT WINDOW", &isTeleportOpen, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+				style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+
+				if (tele_window == "tele_main") {
+					ImGui::Text("INFO");
+					ImGui::SameLine(); HelpMarker("After teleporting you need to click the unstuck button to return to the ground\n\nPS: if after teleporting the game map doesn't load after some seconds or you are under the map, fast travel to a grace\n\nUnfortunately the teleport sometimes may fail from a specific location to another location and you will be at the location but under the ground");
+				}
+
+				teleportButtonUI(WorldChrManRealReal, NetManImpRealReal);
+
+				if (ImGui::SmallButton("UNSTUCK"))
+				{
+					uintptr_t airWalk = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x68, 0x1d3 });
+					byte* airwalk = (byte*)airWalk;
+					*airwalk = 0x0;
+				}
+
+				if (!isTeleportOpen) {
+					showTeleportUI = false;
+					isTeleportOpen = true;
+				}
+				ImGui::End();
+			}
 			
 			style->Colors[ImGuiCol_Button] = ImColor(24, 152, 255);
-			if (ImGui::Button(ICON_FA_PAINTBRUSH "  THEMES  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_PAINTBRUSH "  THEMES  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_themes";
 			}
@@ -798,38 +942,35 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ChildBg] = ImColor(25, 25, 25, 255);
 			ImGui::BeginChild("##", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y));
 
-			ImGui::Combo("PLAYER SPEED", &playerSpeed_current, playerSpeed, 5);
-			ImGui::SameLine(), HelpMarker("Changes player speed only\n\nPS: needs to be changed and re-inserted after a screen loading has occurred");
-			if (playerSpeed_old != playerSpeed_current)
+			ImGui::Checkbox("Custom player speed", &showPlayerSpeed);
+
+			if (showPlayerSpeed)
 			{
-				uintptr_t pSpeedAddr = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x28, 0x17c8 });
-				float* pSpeed = (float*)pSpeedAddr;
+				if (!getSpeed) {
 
-				playerSpeed_old = playerSpeed_current;
+					uintptr_t pSpeedAddr = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x28, 0x17c8 });
+					pSpeed = (float*)pSpeedAddr;
+					*pSpeed = oldSpeed;
+				}
+				getSpeed = true;
 
-				if (playerSpeed_current == 0)
-				{
-					*pSpeed = 1.0f;
+				ImGui::Text("PLAYER SPEED:");
+				if (ImGui::SmallButton("refresh status")) {
+
+					uintptr_t pSpeedAddr = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x28, 0x17c8 });
+					pSpeed = (float*)pSpeedAddr;
 				}
-				else if (playerSpeed_current == 1)
-				{
-					*pSpeed = 2.0f;
-					std::cout << "player speed: " << *pSpeed;
-				}
-				else if (playerSpeed_current == 2)
-				{
-					*pSpeed = 3.0f;
-				}
-				else if (playerSpeed_current == 3)
-				{
-					*pSpeed = 5.0f;
-				}
-				else if (playerSpeed_current == 4)
-				{
-					*pSpeed = 10.0f;
-				}
+				ImGui::SameLine();
+				ImGui::InputFloat("##", pSpeed, NULL, NULL, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::SameLine(), HelpMarker("Changes player speed only\n\nPS: 'Refresh status' button needs to be clicked and speed value re-inserted whenever speed value is automatically set to 0/strange values");
 			}
-			
+
+			if (!showPlayerSpeed && getSpeed) {
+				oldSpeed = *pSpeed;
+				*pSpeed = 1.0f;
+				getSpeed = false;
+			}
+
 			ImGui::Checkbox("Custom FOV", &showFOV);
 
 			if (showFOV)
@@ -897,7 +1038,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ButtonActive] = ImColor(0, 180, 0, 255);
 			style->ItemSpacing = ImVec2(NULL, 8);
 
-			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_home";
 			}
@@ -982,7 +1123,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ButtonActive] = ImColor(0, 180, 0, 255);
 			style->ItemSpacing = ImVec2(NULL, 8);
 
-			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_home";
 			}
@@ -998,7 +1139,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_DIAMOND "  NO STONES REQUIRED", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_DIAMOND "  NO STONES REQUIRED", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isNoStoneRequired = !isNoStoneRequired;
 				noStoneRequired(isNoStoneRequired, noStoneRequirementAddr);
@@ -1016,7 +1157,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 			
-			if (ImGui::Button(ICON_FA_ARROW_UP "  CHARACTER MULTI JUMP", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_ARROW_UP "  CHARACTER MULTI JUMP", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isMultiJump = !isMultiJump;
 				multiJump_func(isMultiJump, (multiJumpAddr + 0x9));
@@ -1034,7 +1175,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_EYE "  INVISIBLE TO ENEMIES", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_EYE "  INVISIBLE TO ENEMIES", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isInvisibleToEnemy = !isInvisibleToEnemy;
 				invisibleToEnemy_func(isInvisibleToEnemy, invisibleToEnemyAddr);
@@ -1042,7 +1183,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::SameLine(); HelpMarker("Enemies won't see you until you attack them (activate it before enemies have seen you)");
 
 			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
-			if (ImGui::Button(ICON_FA_EYE_SLASH "  SHOW GRACES + MAP (not persistent)", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_EYE_SLASH "  SHOW GRACES + MAP (not persistent)", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				if (!gracesShown) {
 					static byte* gracesAddr = (byte*)showGracesReal;
@@ -1060,7 +1201,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_MAP "  UNLOCK ALL MAPS (persistent)", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_MAP "  UNLOCK ALL MAPS (persistent)", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				if (!mapsShowed) {
 					uintptr_t mapsAddr = FindDMAAddy((uintptr_t)&EventFlagManRealReal, { 0x28, 0x5dc });
@@ -1089,7 +1230,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button("Full Unlock Twin Maiden Husk Shop (persistent)", ImVec2(332, NULL)))
+			if (ImGui::Button("Full Unlock Twin Maiden Husk Shop (persistent)", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				if (!twinUnlocked) {
 					uintptr_t twinAddr = FindDMAAddy((uintptr_t)&EventFlagManRealReal, { 0x28, 0x153A6D });
@@ -1111,7 +1252,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button("UNLOCK ALL WHETBLADES (persistent)", ImVec2(332, NULL)))
+			if (ImGui::Button("UNLOCK ALL WHETBLADES (persistent)", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				if (!bladesUnlocked) {
 					uintptr_t bladesAddr = FindDMAAddy((uintptr_t)&EventFlagManRealReal, { 0x28, 0x79F });
@@ -1156,7 +1297,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_PERSON_WALKING "  WALK IN THE AIR", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_PERSON_WALKING "  WALK IN THE AIR", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isWalkInTheAir = !isWalkInTheAir;
 
@@ -1184,7 +1325,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_ARROWS_DOWN_TO_LINE "  UNLIMITED ARROWS", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_ARROWS_DOWN_TO_LINE "  UNLIMITED ARROWS", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isUnlimitedArrow = !isUnlimitedArrow;
 
@@ -1208,7 +1349,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_BOWL_FOOD "  UNLIMITED CONSUMABLES", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_BOWL_FOOD "  UNLIMITED CONSUMABLES", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isUnlimitedConsumables = !isUnlimitedConsumables;
 
@@ -1232,7 +1373,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button(ICON_FA_SKULL "  ONE HIT KILL", ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_SKULL "  ONE HIT KILL", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isOneHitKill = !isOneHitKill;
 
@@ -1256,7 +1397,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button( "ENEMIES DON'T ATTACK", ImVec2(332, NULL)))
+			if (ImGui::Button( "ENEMIES DON'T ATTACK", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isEnemiesDoNotAttack = !isEnemiesDoNotAttack;
 
@@ -1281,7 +1422,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button("FREEZE ENEMIES", ImVec2(332, NULL)))
+			if (ImGui::Button("FREEZE ENEMIES", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isFreezeEnemies = !isFreezeEnemies;
 
@@ -1294,6 +1435,48 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				}
 			}
 			ImGui::SameLine(); HelpMarker("Enemies don't move");
+
+			if (isAllGodMode) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (CHR_DBG_FLAGSReal == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button("ALL GOD MODE", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
+			{
+				isAllGodMode = !isAllGodMode;
+
+				static byte* allGodMode = (byte*)(CHR_DBG_FLAGSReal+(byte)0xA);
+				if (isAllGodMode) {
+					*allGodMode = 0x1;
+				}
+				else {
+					*allGodMode = 0x0;
+				}
+			}
+			ImGui::SameLine(); HelpMarker("No one can die");
+
+			if (isMapInCombat) {
+				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
+			}
+			else {
+				style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			}
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
+			if (MapInCombat1Addr == 0 || MapInCombat2Addr == 0) {
+				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
+			}
+
+			if (ImGui::Button("MAP IN COMBAT", ImVec2(ImGui::GetContentRegionAvail().x - 1, NULL)))
+			{
+				isMapInCombat = !isMapInCombat;
+				mapInCombat(isMapInCombat, MapInCombat1Addr, MapInCombat2Addr);
+			}
 
 			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
 			ImGui::Combo("Runes multiplier", &runeMultiplier_current, runeMoltiplicatore, 5);
@@ -1345,7 +1528,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			}
 			
 			style->Colors[ImGuiCol_Button] = ImColor(0, 70, 150);
-			if (ImGui::Button("ENTITIES PROPORTION  " ICON_FA_ARROW_RIGHT, ImVec2(332, NULL)))
+			if (ImGui::Button("ENTITIES PROPORTION  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_proportion";
 			}
@@ -1358,7 +1541,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ButtonActive] = ImColor(0, 180, 0, 255);
 			style->ItemSpacing = ImVec2(NULL, 8);
 
-			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_misc";
 			}
@@ -1467,7 +1650,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				style->Colors[ImGuiCol_Text] = ImColor(255, 0, 0);
 			}
 
-			if (ImGui::Button("HIDE CLOTH", ImVec2(332, NULL)))
+			if (ImGui::Button("HIDE CLOTH", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				isHideCloth = !isHideCloth;
 				hideCloth_func(isHideCloth, hideClothAddr);
@@ -1544,63 +1727,63 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 
 		if (window == "window_themes")
 		{
-			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(332, NULL)))
+			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_home";
 			}
 
 			style->Colors[ImGuiCol_Button] = ImColor(0, 0, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 0, 0, 255);
-			if (ImGui::Button("BLACK", ImVec2(332, NULL)))
+			if (ImGui::Button("BLACK", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &black;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(255, 255, 255, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(255, 255, 255, 255);
 			style->Colors[ImGuiCol_Text] = ImColor(0, 0, 0);
-			if (ImGui::Button("WHITE", ImVec2(332, NULL)))
+			if (ImGui::Button("WHITE", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &white;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(244, 202, 33, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(244, 202, 33, 255);
-			if (ImGui::Button("YELLOW", ImVec2(332, NULL)))
+			if (ImGui::Button("YELLOW", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &yellow;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(12, 54, 124, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(12, 54, 124, 255);
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
-			if (ImGui::Button("BLUE", ImVec2(332, NULL)))
+			if (ImGui::Button("BLUE", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &blue;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(48, 167, 24, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(48, 167, 24, 255);
-			if (ImGui::Button("GREEN", ImVec2(332, NULL)))
+			if (ImGui::Button("GREEN", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &green;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(255, 0, 255, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(255, 0, 255, 255);
 			style->Colors[ImGuiCol_Text] = ImColor(0, 0, 0);
-			if (ImGui::Button("PINK", ImVec2(332, NULL)))
+			if (ImGui::Button("PINK", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &pink;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(220, 10, 121, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(220, 10, 121, 255);
-			if (ImGui::Button("FUCHSIA", ImVec2(332, NULL)))
+			if (ImGui::Button("FUCHSIA", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &fuchsia;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(128, 0, 128, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(128, 0, 128, 255);
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
-			if (ImGui::Button("PURPLE", ImVec2(332, NULL)))
+			if (ImGui::Button("PURPLE", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &purple;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(255, 0, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(255, 0, 0, 255);
 			style->Colors[ImGuiCol_Text] = ImColor(0, 0, 0);
-			if (ImGui::Button("RED", ImVec2(332, NULL)))
+			if (ImGui::Button("RED", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &red;
 			}
 			style->Colors[ImGuiCol_Button] = ImColor(0, 255, 255, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 255, 255, 255);
-			if (ImGui::Button("CYAN", ImVec2(332, NULL)))
+			if (ImGui::Button("CYAN", ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				color = &cyan;
 			}
@@ -1612,7 +1795,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ChildBg] = ImColor(36, 36, 36, 255);
 			style->Colors[ImGuiCol_Border] = *color;
 			style->ChildBorderSize = 3.0f;
-			ImGui::BeginChild("tips", ImVec2(330, 70), true, ImGuiWindowFlags_NoCollapse);
+			ImGui::BeginChild("tips", ImVec2(350, 70), true, ImGuiWindowFlags_NoCollapse); // x was 350, y was 70
 			ImGui::Text("Hold 'ctrl' while the menu is open to unlock\nvisual movement");
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
 			showAbout = false;
@@ -1625,12 +1808,12 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ChildBg] = ImColor(36, 36, 36, 255);
 			style->Colors[ImGuiCol_Border] = *color;
 			style->ChildBorderSize = 3.0f;
-			ImGui::BeginChild("about", ImVec2(330, 140), true, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse); //ImGui::BeginChild("about", ImVec2(200, 70), true, ImGuiWindowFlags_NoCollapse);		
+			ImGui::BeginChild("about", ImVec2(350, 140), true, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse); // x was 350, y was 140
 			ImGui::SetCursorPos(ImVec2(95, 20));
 			ImGui::Text("Coded by ImAxel0");
 			ImGui::Text(credits);
 			ImGui::SetCursorPos(ImVec2(285, 110));
-			ImGui::Text("v0.4.0");
+			ImGui::Text("v0.5.0");
 			style->Colors[ImGuiCol_Text] = ImColor(49, 154, 236);
 			ImGui::SetCursorPos(ImVec2(5, 110));
 			ImGui::Selectable("Mod page", &showModPage, NULL, ImVec2(80, NULL));

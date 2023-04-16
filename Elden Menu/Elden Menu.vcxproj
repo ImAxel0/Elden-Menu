@@ -196,6 +196,8 @@
     <ClInclude Include="MinHook\Src\hde\table64.h" />
     <ClInclude Include="MinHook\Src\trampoline.h" />
     <ClInclude Include="ModUtils.h" />
+    <ClInclude Include="npc.h" />
+    <ClInclude Include="teleport.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="asm_funcs.asm">
