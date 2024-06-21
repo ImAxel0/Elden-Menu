@@ -82,15 +82,19 @@ uintptr_t playerHeightAddr = SigScan(playerHeight);
 std::vector<uint16_t> hideCloth = { 0xF3, 0x41, 0x0F, 0x10, 0x08, 0x0F, 0xC6 };
 uintptr_t hideClothAddr = SigScan(hideCloth);
 
+// 48 8B 05 ?? ?? ?? ?? 48 85 C0 74 05 48 8B 40 58 C3 C3 -> v1.12.1
 std::vector<uint16_t> GameDataMan = { 0x48,0x8B,0x05,MASKED,MASKED,MASKED,MASKED,0x48,0x85,0xC0,0x74,0x05,0x48,0x8B,0x40,0x58,0xC3,0xC3 }; // mov rax,[GameDataMan]
 uintptr_t GameDataManAddr = SigScan(GameDataMan);
 
+// 48 8B 05 ?? ?? ?? ?? 48 85 C0 74 0F 48 39 88 -> v1.12.1
 std::vector<uint16_t> WorldChrMan = { 0x48,0x8B,0x05,MASKED,MASKED,MASKED,MASKED,0x48,0x85,0xC0,0x74,0x0F,0x48,0x39,0x88 }; // mov rax,[WorldChrMan]
 uintptr_t WorldChrManAddr = SigScan(WorldChrMan);
 
+// 48 8B 3D ???????? 48 85 FF ???? 32 C0 E9 -> v1.12.1
 std::vector<uint16_t> EventFlagMan = { 0x48,0x8B,0x3D,MASKED,MASKED,MASKED,MASKED,0x48,0x85,0xFF,MASKED,MASKED,0x32,0xC0,0xE9 }; // mov rdi,[EventFlagMan] -> test rdi,rdi
 uintptr_t EventFlagManAddr = SigScan(EventFlagMan);
 
+// 80 3D ?? ?? ?? ?? 00 0F 85 ?? ?? ?? ?? 32 C0 48 -> v1.12.1
 std::vector<uint16_t> CHR_DBG_FLAGS = { 0x80,0x3D,MASKED,MASKED,MASKED,MASKED,0x00,0x0F,0x85,MASKED,MASKED,MASKED,MASKED,0x32,0xC0,0x48 }; // cmp byte ptr[CHR_DBG_FLAGS],00
 uintptr_t CHR_DBG_FLAGSAddr = SigScan(CHR_DBG_FLAGS);
 
@@ -103,6 +107,7 @@ uintptr_t fpsAddr = SigScan(fps);
 std::vector<uint16_t> pause = { 0x80, 0xBB, 0x28, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x84 };
 uintptr_t pauseAddr = SigScan(pause);
 
+// 48 8B 05 ???????? 80 78 ?? 00 ???? 48 8D 9F ???????? 48 8B 03 -> v1.12.1
 std::vector<uint16_t> NetManImp = { 0x48,0x8B,0x05,MASKED, MASKED, MASKED, MASKED,0x80,0x78,MASKED,0x00,MASKED, MASKED,0x48,0x8D,0x9F,MASKED, MASKED, MASKED, MASKED,0x48,0x8B,0x03 };
 uintptr_t NetManImpAddr = SigScan(NetManImp);
 
@@ -111,6 +116,12 @@ uintptr_t MapInCombat1Addr = SigScan(MapInCombat1);
 
 std::vector<uint16_t> MapInCombat2 = { 0x74,0x2E,0xC7,0x45,0x50,0x58,0x02,0x00,0x00,0xC7,0x45,0x54,0x02,0x00,0x00,0x00,0xC7,0x45,0x58,0x01,0x00,0x00,0x00 };
 uintptr_t MapInCombat2Addr = SigScan(MapInCombat2);
+
+std::vector<uint16_t> sensitivity = { 0x0f,0xbe,0x80,MASKED,MASKED,MASKED,MASKED,0xf3,0x0f,0x10,0x4b };
+uintptr_t sensitivityAddr = SigScan(sensitivity);
+
+std::vector<uint16_t> centerCamera = { 0x66 ,0x0f ,0x7f ,0x07 ,0xf3 ,0x0f ,0x10 ,0xab };
+uintptr_t centerCameraAddr = SigScan(centerCamera);
 
 // to store the 4 op codes relatives to the corresponding address
 int* CHR_DBG_4bytesAddr = (int*)(CHR_DBG_FLAGSAddr + (byte)0x2);
@@ -151,6 +162,7 @@ bool showPlayerSpeed = false;
 bool showFOV = false;
 bool fpsDetour = true;
 bool showFPS = false;
+bool showSensitivity = false;
 bool showBossConfirmationWindow = false;
 bool showNPCConfirmationWindow = false;
 
@@ -192,6 +204,9 @@ bool isUnlimitedConsumables = false;
 bool isFreezeEnemies = false;
 bool isPause = false;
 bool isMapInCombat = false;
+bool isSensitivity = false;
+bool isCenterCamera = false;
+bool cameraCentered = false;
 
 const char* playerSpeed[] = { "Default", "x2", "x3", "x5", "x10" };
 static int playerSpeed_current = 0;
@@ -209,6 +224,7 @@ std::string window = "window_home";
 const auto lpGetValueNoWeight = (LPVOID)((DWORD_PTR)noWeightAddr);
 const auto lpGetValueRuneMultiplier = (LPVOID)((DWORD_PTR)runeMultiplierAddr);
 const auto lpGetValueFOV = (LPVOID)((DWORD_PTR)fovAddr);
+const auto lpGetValueSensitivity = (LPVOID)((DWORD_PTR)sensitivityAddr);
 
 const auto lpGetValuePlayerHeight = (LPVOID)((DWORD_PTR)playerHeightAddr);
 const auto lpGetValuePlayerWidth = (LPVOID)((DWORD_PTR)(playerHeightAddr - 0x4b));
@@ -302,7 +318,6 @@ BOOL WINAPI HOOK_SetCursorPos(int X, int Y)
 	if ((ShowMenu && key1 && key2) || (!currentlyPressed && previouslyPressed)) {
 		return FALSE;
 	}
-
 	return origSetCursorPos(X, Y);
 }
 
@@ -313,10 +328,16 @@ void InitCursorHook()
 		std::cout << "Couldn't create hook for SetCursorPos." << '\n';
 		return;
 	}
+	else {
+		Log("SetCursor hook created");
+	}
 
 	if (MH_EnableHook(&SetCursorPos) != MH_OK)
 	{
 		std::cout << "Couldn't enable SetCursorPos hook." << '\n';
+	}
+	else {
+		Log("SetCursor hook enabled\n");
 	}
 }
 
@@ -352,9 +373,9 @@ void ReadConfig()
 	}
 	else
 	{
-		ini["Game version"]["version"] = "1.09";
-		ini["Open/close key"]["key value"] = std::stoi("0x50", nullptr, 16);
-		ini["Unlock visual key"]["key value"] = std::stoi("0x11", nullptr, 16);
+		ini["Game version"]["version"] = "1.12.1";
+		ini["Open/close key"]["key value"] = "0x50";
+		ini["Unlock visual key"]["key value"] = "0x11";
 		ini["Debug mode"]["value"] = "0";
 		config.write(ini, true);
 	}
@@ -460,7 +481,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			Replace(playerCameraAddr, { 0xE9, 0xB3, 0x00, 0x00, 0x00 }, { 0x0F, 0x86, 0xB2, 0x00, 0x00, 0x00 });
 		}
 	}
-
+	
 	XINPUT_STATE xinput_state;
 	if (XInputGetState(0, &xinput_state) == ERROR_SUCCESS)
 	{
@@ -472,7 +493,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 		}
 		previouslyPressed = currentlyPressed;
 	}
-
+	
 	ImGui_ImplDX12_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
@@ -917,13 +938,17 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 					ImGui::SameLine(); HelpMarker("After teleporting you need to click the unstuck button to return to the ground\n\nPS: if after teleporting the game map doesn't load after some seconds or you are under the map, fast travel to a grace\n\nUnfortunately the teleport sometimes may fail from a specific location to another location and you will be at the location but under the ground");
 				}
 
-				teleportButtonUI(WorldChrManRealReal, NetManImpRealReal);
+				teleportButtonUI(WorldChrManRealReal, NetManImpRealReal, isCenterCamera, centerCameraAddr);
 
 				if (ImGui::SmallButton("UNSTUCK"))
 				{
 					uintptr_t airWalk = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x68, 0x1d3 });
 					byte* airwalk = (byte*)airWalk;
 					*airwalk = 0x0;
+
+					if (!isCenterCamera) {
+						Replace(centerCameraAddr, { 0x90, 0x90, 0x90, 0x90 }, { 0x66, 0x0f, 0x7f, 0x07 });
+					}
 				}
 
 				if (!isTeleportOpen) {
@@ -931,6 +956,11 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 					isTeleportOpen = true;
 				}
 				ImGui::End();
+			}
+
+			if (ImGui::Button("GAME SETTINGS  " ICON_FA_ARROW_RIGHT, ImVec2(ImGui::GetContentRegionAvail().x - 1, NULL)))
+			{
+				window = "window_gamesettings";
 			}
 			
 			style->Colors[ImGuiCol_Button] = ImColor(24, 152, 255);
@@ -969,65 +999,6 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				oldSpeed = *pSpeed;
 				*pSpeed = 1.0f;
 				getSpeed = false;
-			}
-
-			ImGui::Checkbox("Custom FOV", &showFOV);
-
-			if (showFOV)
-			{
-				if (fovDetour)
-				{
-					Replace(fovAddr, { 0x80, 0xbb, MASKED, MASKED, MASKED, MASKED, 0x00 }, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
-					PDETOUR_TRAMPOLINE lpTrampolineData = {};
-
-					DetourTransactionBegin();
-					DetourUpdateThread(GetCurrentThread());
-					DetourAttachEx((PVOID*)&lpGetValueFOV, (PVOID)&fovAsm_func, &lpTrampolineData, nullptr, nullptr);
-					DetourTransactionCommit();
-
-					const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
-					fovBack = lpDetourInfo->pbRemain;
-				}
-				fovDetour = false;
-
-				if (fovAddr != 0)
-				{
-					fov = _mm_setr_ps(FieldOfView, 0.0f, 0.0f, 0.0f);
-					ImGui::SliderFloat("FOV", &FieldOfView, 30.0f, 110.0f);
-				}
-			}
-			
-			if (!showFOV && fovDetour == false)
-			{
-				DetourTransactionBegin();
-				DetourUpdateThread(GetCurrentThread());
-				DetourDetach(&(PVOID&)lpGetValueFOV, fovAsm_func);
-				DetourTransactionCommit();
-				Replace(fovAddr, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, }, { 0x80, 0xbb, 0x88, 0x04, 0x00, 0x00, 0x00 });
-				fovDetour = true;
-			}
-
-			ImGui::Checkbox("Custom FPS limit", &showFPS);
-
-			if (showFPS)
-			{
-				static float* frametime = (float*)(FPSRealReal + 0x2cc);
-
-				if (fpsDetour) {
-					Replace(FPSRealReal + 0x2d0, { 0x00 }, { 0x01 });
-				}
-				fpsDetour = false;
-
-				if (FPSRealReal != 0)
-				{
-					ImGui::SliderFloat("FPS limit", frametime, 30, 200);
-				}
-			}
-
-			if (!showFPS && fpsDetour == false)
-			{
-				Replace(FPSRealReal + 0x2d0, { 0x01 }, { 0x00 });
-				fpsDetour = true;
 			}
 			ImGui::EndChild();
 		}
@@ -1461,6 +1432,8 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			}
 			ImGui::SameLine(); HelpMarker("No one can die");
 
+			/* disabled with v1.12.1 since MapInCombat1Addr is null
+			
 			if (isMapInCombat) {
 				style->Colors[ImGuiCol_Button] = ImColor(0, 200, 0, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(0, 200, 0, 255);
 			}
@@ -1477,7 +1450,9 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 				isMapInCombat = !isMapInCombat;
 				mapInCombat(isMapInCombat, MapInCombat1Addr, MapInCombat2Addr);
 			}
+			*/
 
+			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255);
 			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255); style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
 			ImGui::Combo("Runes multiplier", &runeMultiplier_current, runeMoltiplicatore, 5);
 			ImGui::SameLine(), HelpMarker("Multiplier of gathered runes");
@@ -1541,6 +1516,11 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_ButtonActive] = ImColor(0, 180, 0, 255);
 			style->ItemSpacing = ImVec2(NULL, 8);
 
+			if (ImGui::Button(ICON_FA_HOUSE, ImVec2(30, NULL)))
+			{
+				window = "window_home";
+			}
+			ImGui::SameLine();
 			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(ImGui::GetContentRegionAvail().x-1, NULL)))
 			{
 				window = "window_misc";
@@ -1698,7 +1678,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			style->Colors[ImGuiCol_Text] = ImColor(255, 255, 255, 255);
 			
 			ImGui::Text("INFO ");
-			ImGui::SameLine(); HelpMarker("Every magic has it's own ID, you can get it from the button below, than insert the one you want in a slot\n\nYou can even insert id's in slots you haven't still unlocked\n\nSlots which has -1 means they are unassigned or still locked\n\nMagic which occupies 2 slots still displays as one slot in this window");
+			ImGui::SameLine(); HelpMarker("Every magic has it's own ID, you can find them online, than insert the one you want in a slot\n\nYou can even insert id's in slots you haven't still unlocked\n\nSlots which has -1 means they are unassigned or still locked\n\nMagic which occupies 2 slots still displays as one slot in this window");
 
 			ImGui::InputInt("slot  1 magic ID", magic_slot1,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
 			ImGui::InputInt("slot  2 magic ID", magic_slot2,  NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
@@ -1714,15 +1694,136 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::InputInt("slot 12 magic ID", magic_slot12, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
 			ImGui::InputInt("slot 13 magic ID", magic_slot13, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
 			ImGui::InputInt("slot 14 magic ID", magic_slot14, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
-
+			/*
 			if (ImGui::Button("open magic ID's list")) {
 				
 				static std::string magicPath = (GetModuleFolderPath() + "\\Magic.txt");
 
 				ShellExecute(NULL, "open", magicPath.c_str(), NULL, NULL, SW_SHOW);
 			}
-
+			*/
 			ImGui::End();
+		}
+
+		if (window == "window_gamesettings")
+		{
+			style->Colors[ImGuiCol_Button] = ImColor(36, 36, 36, 255);
+			style->Colors[ImGuiCol_ButtonHovered] = ImColor(60, 60, 60, 255);
+			style->Colors[ImGuiCol_ButtonActive] = ImColor(0, 180, 0, 255);
+			style->ItemSpacing = ImVec2(NULL, 8);
+
+			if (ImGui::Button(ICON_FA_ARROW_LEFT, ImVec2(ImGui::GetContentRegionAvail().x - 1, NULL)))
+			{
+				window = "window_home";
+			}
+
+			ImGui::Checkbox("Custom FOV", &showFOV);
+
+			if (showFOV)
+			{
+				if (fovDetour)
+				{
+					Replace(fovAddr, { 0x80, 0xbb, MASKED, MASKED, MASKED, MASKED, 0x00 }, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 });
+					PDETOUR_TRAMPOLINE lpTrampolineData = {};
+
+					DetourTransactionBegin();
+					DetourUpdateThread(GetCurrentThread());
+					DetourAttachEx((PVOID*)&lpGetValueFOV, (PVOID)&fovAsm_func, &lpTrampolineData, nullptr, nullptr);
+					DetourTransactionCommit();
+
+					const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
+					fovBack = lpDetourInfo->pbRemain;
+				}
+				fovDetour = false;
+
+				if (fovAddr != 0)
+				{
+					fov = _mm_setr_ps(FieldOfView, 0.0f, 0.0f, 0.0f);
+					ImGui::SliderFloat("FOV", &FieldOfView, 30.0f, 110.0f);
+				}
+			}
+
+			if (!showFOV && fovDetour == false)
+			{
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+				DetourDetach(&(PVOID&)lpGetValueFOV, fovAsm_func);
+				DetourTransactionCommit();
+				Replace(fovAddr, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, }, { 0x80, 0xbb, 0x88, 0x04, 0x00, 0x00, 0x00 });
+				fovDetour = true;
+			}
+
+			// disabled with v1.12.1 as causing weird behaviour
+			//ImGui::Checkbox("Custom FPS limit", &showFPS);
+
+			if (showFPS)
+			{
+				static float* frametime = (float*)(FPSRealReal + 0x2cc);
+
+				if (fpsDetour) {
+					Replace(FPSRealReal + 0x2d0, { 0x00 }, { 0x01 });
+				}
+				fpsDetour = false;
+
+				if (FPSRealReal != 0)
+				{
+					ImGui::SliderFloat("FPS limit", frametime, 30, 200);
+				}
+			}
+
+			if (!showFPS && fpsDetour == false)
+			{
+				Replace(FPSRealReal + 0x2d0, { 0x01 }, { 0x00 });
+				fpsDetour = true;
+			}
+
+			ImGui::Checkbox("Custom sensitivity", &showSensitivity);
+
+			if (showSensitivity && !isSensitivity)
+			{			
+				Replace(sensitivityAddr + 0x5, { MASKED, MASKED }, { 0x90, 0x90 });
+				PDETOUR_TRAMPOLINE lpTrampolineData = {};
+
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+				DetourAttachEx((PVOID*)&lpGetValueSensitivity, (PVOID)&sensitivityAsm_func, &lpTrampolineData, nullptr, nullptr);
+				DetourTransactionCommit();
+
+				const auto lpDetourInfo = (DETOUR_INFO*)lpTrampolineData;
+				sensitivityBack = lpDetourInfo->pbRemain;
+
+				isSensitivity = true;			
+			}
+
+			if (showSensitivity)
+			{
+				ImGui::InputInt("Sensitivity", &sensibilita, NULL, NULL, ImGuiInputTextFlags_EnterReturnsTrue);
+			}
+
+			if (!showSensitivity && isSensitivity)
+			{
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+				DetourDetach(&(PVOID&)lpGetValueSensitivity, sensitivityAsm_func);
+				DetourTransactionCommit();
+				Replace(sensitivityAddr + 0x5, { MASKED, MASKED }, { 0x00, 0x00 });
+
+				isSensitivity = false;
+			}
+
+			ImGui::Checkbox("Center camera on Player", &isCenterCamera);
+
+			if (isCenterCamera && !cameraCentered)
+			{
+				Replace(centerCameraAddr, { 0x66, 0x0f, 0x7f, 0x07 }, { 0x90, 0x90, 0x90, 0x90 });
+				cameraCentered = true;
+			}
+
+			if (!isCenterCamera && cameraCentered)
+			{
+				Replace(centerCameraAddr, { 0x90, 0x90, 0x90, 0x90 }, { 0x66 ,0x0f ,0x7f ,0x07 });
+				cameraCentered = false;
+			}
 		}
 
 		if (window == "window_themes")
@@ -1813,7 +1914,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::Text("Coded by ImAxel0");
 			ImGui::Text(credits);
 			ImGui::SetCursorPos(ImVec2(285, 110));
-			ImGui::Text("v0.5.0");
+			ImGui::Text("v0.6.1");
 			style->Colors[ImGuiCol_Text] = ImColor(49, 154, 236);
 			ImGui::SetCursorPos(ImVec2(5, 110));
 			ImGui::Selectable("Mod page", &showModPage, NULL, ImVec2(80, NULL));
@@ -1836,6 +1937,22 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 		ImGui::End();
 	}
 	ImGui::EndFrame();
+
+	if (isWalkInTheAir)
+	{
+		zPtrTpAddr = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { 0x10EF8, 0x0, 0x190, 0x68, 0x74 });
+		zPtrTp = (float*)zPtrTpAddr;
+
+		if (GetAsyncKeyState(VK_NUMPAD8) & 1)
+		{
+			*zPtrTp += 1;
+		}
+
+		if (GetAsyncKeyState(VK_NUMPAD2) & 1)
+		{
+			*zPtrTp -= 1;
+		}
+	}
 
 	DirectX12Interface::_FrameContext& CurrentFrameContext = DirectX12Interface::FrameContext[pSwapChain->GetCurrentBackBufferIndex()];
 	CurrentFrameContext.CommandAllocator->Reset();

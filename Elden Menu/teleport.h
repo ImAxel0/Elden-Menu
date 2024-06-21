@@ -100,8 +100,12 @@ unsigned char Haligtree1st[12] = { 0xAE, 0x58, 0xAF, 0x45, 0x31, 0xB5, 0x1A, 0x4
 unsigned char Haligtree2nd[12] = { 0xE6, 0x27, 0xB1, 0x45, 0xCE, 0xBB, 0xFA, 0x43, 0x95, 0x2F, 0x8D, 0x44 };
 unsigned char Haligtree3rd[12] = { 0x5E, 0xB3, 0xB1, 0x45, 0x60, 0xC3, 0x72, 0x42, 0x9D, 0xBF, 0x4F, 0x44 };
 
-void teleport(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal, unsigned char& xzy)
+void teleport(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal, unsigned char& xzy, bool camera, uintptr_t centerCameraAddr)
 {
+	if (!camera) {
+		Replace(centerCameraAddr, { 0x66, 0x0f, 0x7f, 0x07 }, { 0x90, 0x90, 0x90, 0x90 });
+	}
+
 	memcpy(&x, &xzy, sizeof(x));
 	memcpy(&z, &xzy + 4, sizeof(z));
 	memcpy(&y, &xzy + 8, sizeof(y));
@@ -114,7 +118,6 @@ void teleport(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal, unsign
 
 	yPtrTpAddr = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { 0x10EF8, 0x0, 0x190, 0x68, 0x78 });
 	yPtrTp = (float*)yPtrTpAddr;
-
 
 	xGlobalPtrAddr = FindDMAAddy((uintptr_t)&NetManImpRealReal, { 0x80, 0xe0, 0x80, 0x20, 0x98, 0x28 });
 	xGlobalPtr = (float*)xGlobalPtrAddr;
@@ -138,7 +141,7 @@ void teleport(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal, unsign
 	*nogravity = 0x1;
 }
 
-void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal)
+void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal, bool isCenterCamera, uintptr_t centerCameraAddr)
 {
 	if (tele_window == "tele_main")
 	{
@@ -193,72 +196,72 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("The first step", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TheFirstStep);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TheFirstStep, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Agheel lake", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *AgheelLake);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *AgheelLake, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Church of Elleh", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *ChurchOfElleh);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *ChurchOfElleh, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Limgrave Colosseum", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *LimgraveColosseum);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *LimgraveColosseum, isCenterCamera, centerCameraAddr);
 		}
 		/*
 		if (ImGui::Button("Top of Limgrave Divine Tower", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLimgraveDivineTower);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLimgraveDivineTower, isCenterCamera, centerCameraAddr);
 		}
 		*/
 		if (ImGui::Button("Limgrave coast", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *LimgraveCoast);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *LimgraveCoast, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Limgrave catacombs entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *LimgraveCatacombsEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *LimgraveCatacombsEntrance, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Stormveil castle 1st gate", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil1stGate);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil1stGate, isCenterCamera, centerCameraAddr);
 		}
 		/*
 		if (ImGui::Button("Stormveil 2nd gate (Margit entrance)", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil2ndGateMargitEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil2ndGateMargitEntrance, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Stormveil 3rd gate", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil3rdGate);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil3rdGate, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Stormveil 4th gate (Godrick)", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil4thGateGodrick);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *Stormveil4thGateGodrick, isCenterCamera, centerCameraAddr);
 		}
 		*/
 		if (ImGui::Button("Stormveil castle back", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *StormveilOut);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *StormveilOut, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("To south bridge", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *ToSouthBridge);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *ToSouthBridge, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Church of Dragon Communion", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *ChurchDragonCommunion);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *ChurchDragonCommunion, isCenterCamera, centerCameraAddr);
 		}
 	}
 	if (tele_window == "west")
@@ -271,62 +274,62 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("Cathedral of Manus Celes (Liurnia)", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CathedralOfManusCeles);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CathedralOfManusCeles, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Top of 4 Liurnia Belfries", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLiurniaBelfries);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLiurniaBelfries, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Academy gate town", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *AcademyGateTown);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *AcademyGateTown, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Liurnia Divine tower entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *LiurniaDivineTowerEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *LiurniaDivineTowerEntrance, isCenterCamera, centerCameraAddr);
 		}
 		/*
 		if (ImGui::Button("Top of Liurnia Divine tower", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLiurniaDivineTower);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLiurniaDivineTower, isCenterCamera, centerCameraAddr);
 		}
 		
 		if (ImGui::Button("Rennala entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *RennalaEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *RennalaEntrance, isCenterCamera, centerCameraAddr);
 		}
 		*/
 		if (ImGui::Button("Raya Lucaria outer gate", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *RayaLucariaOuterGate);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *RayaLucariaOuterGate, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Caria Manor gate", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CariaManorGate);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CariaManorGate, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Back of Caria Manor", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *BackOfCariaManor);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *BackOfCariaManor, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Grand Lift of Dectus entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *GrandLiftOfDectusEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *GrandLiftOfDectusEntrance, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Top of Grand Lift of Dectus", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfGrandLiftOfDectus);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfGrandLiftOfDectus, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Village of the hanged", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *VillageHanged);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *VillageHanged, isCenterCamera, centerCameraAddr);
 		}
 	}
 	if (tele_window == "northwest")
@@ -339,62 +342,62 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("Outer Capital 1st entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *OuterCapital1stEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *OuterCapital1stEntrance, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Outer Capital 2nd entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *OuterCapital2ndEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *OuterCapital2ndEntrance, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Leyndell Capital entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *LeyndellCapitalEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *LeyndellCapitalEntrance, isCenterCamera, centerCameraAddr);
 		}
 		/*
 		if (ImGui::Button("Leyndell main road", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *LeyndellMainStreet);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *LeyndellMainStreet, isCenterCamera, centerCameraAddr);
 		}
 		
 		if (ImGui::Button("Divine bridge (Leyndell)", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *DivineBridgeLeyndell);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *DivineBridgeLeyndell, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Erdtree sanctuary", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *ErdtreeSanctuary);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *ErdtreeSanctuary, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Elden Throne", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *EldenThrone);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *EldenThrone, isCenterCamera, centerCameraAddr);
 		}
 		*/
 		if (ImGui::Button("Altus Plateau road start", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *AltusPlateauRoad);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *AltusPlateauRoad, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Altus broken bridge", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *AltusBrokenBridge);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *AltusBrokenBridge, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Altus creepy windmill village", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *AltusCreepyWindmillVillage);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *AltusCreepyWindmillVillage, isCenterCamera, centerCameraAddr);
 		}
 		/*
 		if (ImGui::Button("Top of Altus East Divine tower", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfAltusEastDivineTower);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfAltusEastDivineTower, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Top of Altus West Divine tower", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfAltusWestDivineTower);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfAltusWestDivineTower, isCenterCamera, centerCameraAddr);
 		}
 		*/
 	}
@@ -408,67 +411,67 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("Snow beginning (Forbidden Lands)", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *SnowBeginning);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *SnowBeginning, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Grand Lift of Rold entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *GrandLiftRoldEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *GrandLiftRoldEntrance, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Top of Lift of Rold", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLiftRold);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfLiftRold, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Snow valley ruins", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *SnowValleyRuins);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *SnowValleyRuins, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Consecreted Snowfield", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *ConsecretedSnowfield);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *ConsecretedSnowfield, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Liturgical town", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *LiturgicalTown);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *LiturgicalTown, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Castle Sol", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CastleSol);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CastleSol, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Freezing lake", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *FreezingLake);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *FreezingLake, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Falling Big Hand", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *FallingBigHand);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *FallingBigHand, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Forge of the Giants chainbridge", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *GiantsChainbridge);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *GiantsChainbridge, isCenterCamera, centerCameraAddr);
 		}
 		/*
 		if (ImGui::Button("Haligtree 1st place", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *Haligtree1st);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *Haligtree1st, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Haligtree 2nd place", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *Haligtree2nd);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *Haligtree2nd, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Haligtree 3rd place", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *Haligtree3rd);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *Haligtree3rd, isCenterCamera, centerCameraAddr);
 		}
 		*/
 	}
@@ -482,12 +485,12 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("Farum Azula bridge", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *FarumAzulaBridge);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *FarumAzulaBridge, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Farum Azula balcony", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *FarumAzulaBalcony);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *FarumAzulaBalcony, isCenterCamera, centerCameraAddr);
 		}
 	}
 	if (tele_window == "southeast")
@@ -500,32 +503,32 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("Caelid Sanctum", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidSanctum);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidSanctum, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Caelid Dragon bridge", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidDragonBridge);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidDragonBridge, isCenterCamera, centerCameraAddr);
 		}
 		/*
 		if (ImGui::Button("Top of Caelid Divine tower", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfCaelidDivineTower);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *TopOfCaelidDivineTower, isCenterCamera, centerCameraAddr);
 		}
 		*/
 		if (ImGui::Button("Caelid colosseum", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidColosseum);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidColosseum, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Caelid swamp", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidSwamp);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CaelidSwamp, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Redmane castle (Radahn)", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *RedmaneCastle);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *RedmaneCastle, isCenterCamera, centerCameraAddr);
 		}
 	}
 	if (tele_window == "south")
@@ -538,17 +541,17 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("Castle Morne entrance", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CastleMorneEntrance);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CastleMorneEntrance, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Back of Castle Morne", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *BackOfCastleMorne);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *BackOfCastleMorne, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("South witch ruins", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *SouthWitchRuins);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *SouthWitchRuins, isCenterCamera, centerCameraAddr);
 		}
 	}
 	if (tele_window == "misc/funny")
@@ -561,17 +564,17 @@ void teleportButtonUI(uintptr_t WorldChrManRealReal, uintptr_t NetManImpRealReal
 
 		if (ImGui::Button("Roundtable locked room(use at roundtable)", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *RoundtableLockedRoom);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *RoundtableLockedRoom, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Center of the map?", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *CenterMap);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *CenterMap, isCenterCamera, centerCameraAddr);
 		}
 
 		if (ImGui::Button("Inside Golden tree", ImVec2(ImGui::GetContentRegionAvail().x, NULL)))
 		{
-			teleport(WorldChrManRealReal, NetManImpRealReal, *InsideGoldenTree);
+			teleport(WorldChrManRealReal, NetManImpRealReal, *InsideGoldenTree, isCenterCamera, centerCameraAddr);
 		}
 	}
 }

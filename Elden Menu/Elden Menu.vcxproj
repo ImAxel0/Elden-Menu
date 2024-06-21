@@ -75,7 +75,7 @@
     <OutDir>C:\Games\ELDEN.RING.1.09.Deluxe.Edition.Steam.Rip-InsaneRamZes\ELDEN RING\Game\mods</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>C:\Games\ELDEN.RING.1.09.Deluxe.Edition.Steam.Rip-InsaneRamZes\ELDEN RING\Game\mods</OutDir>
+    <OutDir>..\..\..\..\Games\ELDEN.RING.1.09.1\ELDEN RING\Game\mods</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

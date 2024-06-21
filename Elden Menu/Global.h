@@ -12,6 +12,7 @@ extern "C" void runeMultiplierAsm_func();
 extern "C" void playerHeightAsm_func();
 extern "C" void playerWidthAsm_func();
 extern "C" void playerLengthAsm_func();
+extern "C" void sensitivityAsm_func();
 
 extern "C" LPVOID statsBack;
 extern "C" LPVOID runeBack;
@@ -22,6 +23,7 @@ extern "C" LPVOID runeMultiplierBack;
 extern "C" LPVOID playerHeightBack;
 extern "C" LPVOID playerWidthBack;
 extern "C" LPVOID playerLengthBack;
+extern "C" LPVOID sensitivityBack;
 
 extern "C" DWORD_PTR* dwVigorAddr;
 extern "C" DWORD_PTR* dwRuneAddr;
@@ -37,3 +39,5 @@ extern "C" float pWidth;
 extern "C" __m128 playerWidth_m128;
 extern "C" float pLength;
 extern "C" __m128 playerLength_m128;
+
+extern "C" int sensibilita;

@@ -22,6 +22,9 @@ extern playerWidth_m128:xmmword
 extern playerLengthBack:QWORD
 extern playerLength_m128:xmmword
 
+extern sensitivityBack:QWORD
+extern sensibilita:QWORD
+
 .code
 vigorAsm_func proc
 	push rax
@@ -89,4 +92,9 @@ playerLengthAsm_func proc
 	movss xmm0, real4 ptr [playerLength_m128]
 	jmp playerLengthBack
 playerLengthAsm_func endp
+
+sensitivityAsm_func proc
+	mov eax, dword ptr [sensibilita]
+	jmp sensitivityBack
+sensitivityAsm_func endp
 end
