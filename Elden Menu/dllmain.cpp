@@ -357,6 +357,7 @@ static void HelpMarker(const char* desc)
 std::string gameVer;
 DWORD openKey{0x50};
 DWORD visualKey{0x11};
+bool controllerShortcut = true;
 bool debugMode = false;
 
 void ReadConfig()
@@ -369,6 +370,7 @@ void ReadConfig()
 		gameVer = (ini["Game version"].get("version"));
 		openKey = std::stoi(ini["Open/close key"].get("key value"), nullptr, 16);
 		visualKey = std::stoi(ini["Unlock visual key"].get("key value"), nullptr, 16);
+		controllerShortcut = std::stoi(ini["Controller shortcut"].get("value"));
 		debugMode = std::stoi(ini["Debug mode"].get("value"));
 	}
 	else
@@ -376,6 +378,7 @@ void ReadConfig()
 		ini["Game version"]["version"] = "1.12.1";
 		ini["Open/close key"]["key value"] = "0x50";
 		ini["Unlock visual key"]["key value"] = "0x11";
+		ini["Controller shortcut"]["value"] = "1";
 		ini["Debug mode"]["value"] = "0";
 		config.write(ini, true);
 	}
@@ -482,16 +485,19 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 		}
 	}
 	
-	XINPUT_STATE xinput_state;
-	if (XInputGetState(0, &xinput_state) == ERROR_SUCCESS)
+	if (controllerShortcut)
 	{
-		const XINPUT_GAMEPAD& gamepad = xinput_state.Gamepad;
-		currentlyPressed = (gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) && (gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
-		
-		if (!currentlyPressed && previouslyPressed) {
-			ShowMenu = !ShowMenu;
+		XINPUT_STATE xinput_state;
+		if (XInputGetState(0, &xinput_state) == ERROR_SUCCESS)
+		{
+			const XINPUT_GAMEPAD& gamepad = xinput_state.Gamepad;
+			currentlyPressed = (gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) && (gamepad.wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
+
+			if (!currentlyPressed && previouslyPressed) {
+				ShowMenu = !ShowMenu;
+			}
+			previouslyPressed = currentlyPressed;
 		}
-		previouslyPressed = currentlyPressed;
 	}
 	
 	ImGui_ImplDX12_NewFrame();
@@ -977,7 +983,6 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			if (showPlayerSpeed)
 			{
 				if (!getSpeed) {
-
 					uintptr_t pSpeedAddr = FindDMAAddy((uintptr_t)&WorldChrManRealReal, { LocalPlayerOffset, 0x00, 0x190, 0x28, 0x17c8 });
 					pSpeed = (float*)pSpeedAddr;
 					*pSpeed = oldSpeed;
@@ -1914,7 +1919,7 @@ HRESULT APIENTRY MJPresent(IDXGISwapChain3* pSwapChain, UINT SyncInterval, UINT 
 			ImGui::Text("Coded by ImAxel0");
 			ImGui::Text(credits);
 			ImGui::SetCursorPos(ImVec2(285, 110));
-			ImGui::Text("v0.6.1");
+			ImGui::Text("v0.6.2");
 			style->Colors[ImGuiCol_Text] = ImColor(49, 154, 236);
 			ImGui::SetCursorPos(ImVec2(5, 110));
 			ImGui::Selectable("Mod page", &showModPage, NULL, ImVec2(80, NULL));
